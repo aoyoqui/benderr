@@ -1,7 +1,22 @@
-[project]
-name = "benderr"
-version = "0.1.0"
-description = "Neat!"
-readme = "README.md"
-requires-python = ">=3.12"
-dependencies = []
+[tool.uv]
+package = false
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv.workspace]
+members = ["packages/br_tester"]
+
+[tool.uv.sources]
+br_tester = { workspace = true }
+
+[tool.ruff]
+line-length = 119
+select = ["E", "F", "I"]
+target-version = "py312"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "packages/br_tester/src"
+]
