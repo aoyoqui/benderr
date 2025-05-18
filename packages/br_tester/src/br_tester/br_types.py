@@ -60,16 +60,3 @@ class StepResult:
     id: int
     name: str
     results: list[Measurement] = None
-
-@dataclass
-class Sequence:
-    steps: list[Step] = None
-
-    def __len__(self):
-        if self.steps:
-            return len(self.steps)
-        else:
-            return 0
-        
-    def __getitem__(self, index):
-        return self.steps[index]
