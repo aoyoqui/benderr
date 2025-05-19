@@ -225,20 +225,34 @@ def test_boolean_spec_mismatch():
     with pytest.raises(SpecMismatch):
         sequence.run()
 
+def delay_10ms():
+    time.sleep(0.01)
+
+class StartEndTimeCustomError(Exception):
+    pass
+
+def step_raise_exception():
+    time.sleep(0.01)
+    raise StartEndTimeCustomError()
+
 class TestSequenceStartEndTime(Sequence):
     __test__ = False
     def sequence(self):
-        def delay():
-            time.sleep(0.01)
-        self.step(delay)
+        self.step(delay_10ms)
+        self.step(step_raise_exception)
 
 def test_sequence_start_end_time():
-    sequence = TestSequenceStartEndTime([Step(1, "Test Time")])  
+    sequence = TestSequenceStartEndTime([Step(1, "Test Time"), Step(2, "Error")])  
     now = datetime.now()
-    sequence.run()
+    with pytest.raises(StartEndTimeCustomError):
+        sequence.run()
     assert(now <= sequence.step_results[0].start_time)
     assert(sequence.step_results[0].start_time < sequence.step_results[0].end_time)
-                         
+    assert(now <= sequence.step_results[1].start_time)
+    assert(sequence.step_results[0].end_time < sequence.step_results[1].start_time)
+    assert(sequence.step_results[1].start_time < sequence.step_results[1].end_time)
+
+
 if __name__ == "__main__":
     pytest.main(args=["-v"]) 
 

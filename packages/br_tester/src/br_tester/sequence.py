@@ -31,11 +31,16 @@ class Sequence(ABC):
         step_result = StepResult(self.steps[self.count].id, self.steps[self.count].name, datetime.now())
         print(f"{self.steps[self.count].id}: {self.steps[self.count].name}")
         print(f"Start time: {step_result.start_time}")        
-        result = Sequence._execute(f, *args, **kwargs)
-        step_result = self._test(result, step_result)
-        step_result.end_time = datetime.now()
-        self.step_results.append(step_result)
-        print(f"End time: {step_result.end_time}")
+        try:
+            result = Sequence._execute(f, *args, **kwargs)
+            step_result = self._test(result, step_result)
+        except Exception as e:
+            step_result.verdict = Verdict.ABORTED
+            raise
+        finally:
+            step_result.end_time = datetime.now()
+            self.step_results.append(step_result)
+            print(f"End time: {step_result.end_time}")
         self.count += 1
         return result
 
