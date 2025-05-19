@@ -1,5 +1,14 @@
 import pytest
-from br_tester.br_types import NumericComparator, NumericSpec, Spec, Step, StepCountError, Verdict
+from br_tester.br_types import (
+    BooleanSpec,
+    NumericComparator,
+    NumericSpec,
+    Spec,
+    SpecMismatch,
+    Step,
+    StepCountError,
+    Verdict,
+)
 from br_tester.sequence import Sequence
 
 
@@ -12,7 +21,7 @@ def step_2(some_number):
 def step_3(some_number, some_string):
     print("This is step 3")
 
-class TestSequence1(Sequence):
+class TestSequenceStepCount(Sequence):
     __test__ = False
     def sequence(self):
         self.step(step_1)
@@ -20,7 +29,7 @@ class TestSequence1(Sequence):
         self.step(step_3, 0, "foo")
     
 def test_sequence_init():
-    sequence = TestSequence1([])
+    sequence = TestSequenceStepCount([])
     assert(len(sequence.steps) == 0)
     assert(sequence.count == 0)
 
@@ -30,7 +39,7 @@ def test_number_of_steps():
         Step(2000, "Step 2", []), 
         Step(3000, "Step 3", [])
     ]
-    sequence = TestSequence1(steps)
+    sequence = TestSequenceStepCount(steps)
     sequence.run()
     assert(len(sequence.step_results) == len(sequence.steps))
 
@@ -41,7 +50,7 @@ def test_fewer_steps_than_configured():
         Step(3000, "Step 3", []),
         Step(4000, "Step 4", [])
     ]
-    sequence = TestSequence1(steps)
+    sequence = TestSequenceStepCount(steps)
     with pytest.raises(StepCountError):
         sequence.run()
         
@@ -50,7 +59,7 @@ def test_more_steps_than_configured():
         Step(1000, "Step 1", [Spec("voltage", NumericSpec(NumericComparator.GTLT, 0, 10, "V"))]), 
         Step(2000, "Step 2", []), 
     ]
-    sequence = TestSequence1(steps)
+    sequence = TestSequenceStepCount(steps)
     with pytest.raises(StepCountError):
         sequence.run()
 
@@ -120,11 +129,11 @@ def test_step_with_args_kwargs():
     assert(isinstance(result[2], type(_bar)) and result[2] == _bar)
 
 
-class TestSequence2(Sequence):
+class TestSequenceNoSpecs(Sequence):
     __test__ = False
     def sequence(self):
-        self.step(lambda x: x+1)
-        self.step(lambda _: 3.14)
+        self.step(lambda x: x+1, 3.0)
+        self.step(lambda : 3.14)
         self.step(print, "Foo")
     
 def test_pass_no_specs():
@@ -133,13 +142,86 @@ def test_pass_no_specs():
         Step(2000, "Step Pi", []), 
         Step(3000, "Step Print", [])
     ]
-    sequence = TestSequence1(steps)
+    sequence = TestSequenceNoSpecs(steps)
     sequence.run()
     assert(len(sequence.step_results) == len(sequence.steps))
     for r in sequence.step_results:
         assert(r.verdict == Verdict.PASSED)
 
+class TestSequenceBooleanSpecs(Sequence):
+    __test__ = False
+    def sequence(self):
+        self.step(lambda : False)
+        self.step(lambda : True)
+        self.step(lambda : False)
+        self.step(lambda : True)
+    
+def test_boolean_spec_pass():
+    steps = [
+        Step(1, "Step False", [Spec("ExpectedFalse", BooleanSpec(pass_if_true=False))]),
+        Step(2, "Step True", [Spec("ExpectedTrue", BooleanSpec(pass_if_true=True))]),
+        Step(1, "Step False", [Spec("ExpectedFalse", BooleanSpec(pass_if_true=False))]),
+        Step(2, "Step True", [Spec("ExpectedTrue", BooleanSpec(pass_if_true=True))]),
+    ]
+    sequence = TestSequenceBooleanSpecs(steps)
+    sequence.run()
+    assert(len(sequence.step_results) == len(sequence.steps))
+    for r in sequence.step_results:
+        assert(r.verdict == Verdict.PASSED)
+    
+def test_boolean_spec_fail():
+    steps = [
+        Step(1, "Step True", [Spec("ExpectedTrue", BooleanSpec(pass_if_true=True))]),
+        Step(2, "Step True", [Spec("ExpectedTrue", BooleanSpec(pass_if_true=True))]),
+        Step(2, "Step False", [Spec("ExpectedFalse", BooleanSpec(pass_if_true=False))]),
+        Step(2, "Step False", [Spec("ExpectedFalse", BooleanSpec(pass_if_true=False))]),
+    ]
+    sequence = TestSequenceBooleanSpecs(steps)
+    sequence.run()
+    assert(len(sequence.step_results) == len(sequence.steps))
+    assert(sequence.step_results[0].verdict == Verdict.FAILED)
+    assert(sequence.step_results[1].verdict == Verdict.PASSED)
+    assert(sequence.step_results[2].verdict == Verdict.PASSED)
+    assert(sequence.step_results[3].verdict == Verdict.FAILED)
+    assert(len(sequence.step_results[0].results) == 1)
+    assert(len(sequence.step_results[1].results) == 1)
+    assert(len(sequence.step_results[2].results) == 1)
+    assert(len(sequence.step_results[3].results) == 1)
+    assert(not sequence.step_results[0].results[0].value)
+    assert(sequence.step_results[1].results[0].value)
+    assert(not sequence.step_results[2].results[0].value)
+    assert(sequence.step_results[3].results[0].value)
+    assert(not sequence.step_results[0].results[0].passed)
+    assert(sequence.step_results[1].results[0].passed)
+    assert(sequence.step_results[2].results[0].passed)
+    assert(not sequence.step_results[3].results[0].passed)
 
+class TestSequenceBooleanSpecMismatch(Sequence):
+    __test__ = False
+    def sequence(self):
+        self.step(lambda : False)
+
+def test_boolean_spec_mismatch():
+    steps = [
+        Step(1, "Step True", [Spec("voltage", NumericSpec(NumericComparator.GTLT, 0, 10, "V"))]),
+    ]
+    sequence = TestSequenceBooleanSpecMismatch(steps)
+    with pytest.raises(SpecMismatch):
+        sequence.run()
+
+    steps = [
+        Step(
+            1, 
+            "Step True", 
+            [
+                Spec("ExpectedTrue", BooleanSpec(pass_if_true=True)), 
+                Spec("ExpectedFalse", BooleanSpec(False))
+            ]
+        ),
+    ]
+    sequence = TestSequenceBooleanSpecs(steps)
+    with pytest.raises(SpecMismatch):
+        sequence.run()
 
 if __name__ == "__main__":
     pytest.main(args=["-v"]) 

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from br_tester.br_types import Step, StepCountError, StepResult, Verdict
+from br_tester.br_types import BooleanSpec, Measurement, SpecMismatch, Step, StepCountError, StepResult, Verdict
 
 
 class Sequence(ABC):
@@ -39,7 +39,7 @@ class Sequence(ABC):
             result = f()
         return result
 
-    def _test(self, *result):
+    def _test(self, result):
         specs = self.steps[self.count].specs
         # How do we turn a list of Specs into a list of Measurement
         # First, we need to process the result in some way. What form can result have? WHat should we support??
@@ -57,9 +57,23 @@ class Sequence(ABC):
         if specs is None or len(specs) == 0:
             step_result.verdict = Verdict.PASSED
         elif isinstance(result, bool):
-            pass
+            step_result = self._test_boolean(result, specs, step_result)
         elif isinstance(result, str):
             pass
         else:
             pass
         self.step_results.append(step_result)
+
+    def _test_boolean(self, result, specs, step_result: StepResult):
+        if(len(specs) > 1):
+            raise SpecMismatch(
+                f"Result is a single boolean but more than one spec for this result has been defined: {specs}"
+            )
+        spec = specs[0]
+        if isinstance(spec.spec, BooleanSpec):
+            passed = (spec.spec.pass_if_true and result) or (not spec.spec.pass_if_true and not result)
+            step_result.verdict = Verdict.PASSED if passed else Verdict.FAILED
+            step_result.results.append(Measurement(result, passed, spec))
+        else:
+            raise SpecMismatch(f"Result is a single boolean but spec does not define a boolean check: {spec}")
+        return step_result

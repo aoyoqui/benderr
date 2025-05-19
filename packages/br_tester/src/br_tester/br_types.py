@@ -33,6 +33,10 @@ class NoSpec:
     action: NoSpecAction
 
 @dataclass
+class BooleanSpec:
+    pass_if_true: bool
+
+@dataclass
 class NumericSpec:
     comparator: NumericComparator
     lower: float | None = None
@@ -47,7 +51,7 @@ class StringSpec:
 @dataclass
 class Spec:
     name: str
-    spec: NoSpec | NumericSpec | StringSpec
+    spec: NoSpec | NumericSpec | StringSpec | BooleanSpec
 
 @dataclass
 class Measurement:
@@ -66,7 +70,10 @@ class StepResult:
     id: int
     name: str
     verdict: Verdict = Verdict.UNDEFINED
-    results: list[Measurement] = None
+    results: list[Measurement] = field(default_factory=list)
 
 class StepCountError(Exception):
     pass
+
+class SpecMismatch(Exception):
+    pass    
