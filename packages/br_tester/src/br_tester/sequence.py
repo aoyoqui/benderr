@@ -18,17 +18,24 @@ class Sequence(ABC):
 
     @abstractmethod
     def sequence(self):
-        """Derive from this and implement the steps in this method"""
+        """
+        Derive from this and implement the steps in this method, wrapping steps in the form:
+            self.step(f, arg1, arg2, arg3, kwarg1, kwarg2)
+        """
         pass
 
     def step(self, f, *args, **kwargs):
         if self.count > len(self.steps) - 1:
+            # To do: how to handle this in the report. Create a new step?
             raise StepCountError("More steps to report than there are specified!")
+        step_result = StepResult(self.steps[self.count].id, self.steps[self.count].name, datetime.now())
         print(f"{self.steps[self.count].id}: {self.steps[self.count].name}")
-        print(f"Start time is {datetime.now()}")        
+        print(f"Start time: {step_result.start_time}")        
         result = Sequence._execute(f, *args, **kwargs)
-        self._test(result)
-        print(f"End time is {datetime.now()}")
+        step_result = self._test(result, step_result)
+        step_result.end_time = datetime.now()
+        self.step_results.append(step_result)
+        print(f"End time: {step_result.end_time}")
         self.count += 1
         return result
 
@@ -39,7 +46,7 @@ class Sequence(ABC):
             result = f()
         return result
 
-    def _test(self, result):
+    def _test(self, result, step_result: StepResult) -> StepResult:
         specs = self.steps[self.count].specs
         # How do we turn a list of Specs into a list of Measurement
         # First, we need to process the result in some way. What form can result have? WHat should we support??
@@ -53,7 +60,6 @@ class Sequence(ABC):
         # - tuple/list - If tuples of primitive types, use name from Spec, use same order as provided. Use with care
         #                If tuples of dataclasses, 
         print(f"Specs: {specs}")
-        step_result = StepResult(self.steps[self.count].id, self.steps[self.count].name)
         if specs is None or len(specs) == 0:
             step_result.verdict = Verdict.PASSED
         elif isinstance(result, bool):
@@ -62,7 +68,7 @@ class Sequence(ABC):
             pass
         else:
             pass
-        self.step_results.append(step_result)
+        return step_result
 
     def _test_boolean(self, result, specs, step_result: StepResult):
         if(len(specs) > 1):

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
@@ -69,6 +70,8 @@ class Step:
 class StepResult:
     id: int
     name: str
+    start_time: datetime | None = None
+    end_time: datetime | None = None
     verdict: Verdict = Verdict.UNDEFINED
     results: list[Measurement] = field(default_factory=list)
 
