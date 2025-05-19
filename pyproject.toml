@@ -5,11 +5,20 @@ package = false
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
+
 [tool.uv.workspace]
-members = ["packages/br_tester"]
+members = [
+  "packages/br_tester",
+  "packages/br_common",
+  ]
 
 [tool.uv.sources]
 br_tester = { workspace = true }
+br_common = { workspace = true }
 
 [tool.ruff]
 line-length = 119
@@ -18,5 +27,7 @@ target-version = "py312"
 
 [tool.pytest.ini_options]
 pythonpath = [
-  "packages/br_tester/src"
+  "packages/br_tester/src",
+  "packages/br_common/src"
 ]
+
