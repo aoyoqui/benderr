@@ -60,3 +60,6 @@ class StepResult:
     id: int
     name: str
     results: list[Measurement] = None
+
+class StepCountError(Exception):
+    pass
