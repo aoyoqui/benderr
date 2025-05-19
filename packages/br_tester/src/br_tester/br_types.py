@@ -1,7 +1,7 @@
-from typing import Any
 from dataclasses import dataclass
-
 from enum import StrEnum
+from typing import Any
+
 
 class NoSpecAction(StrEnum):
     LOG = "log"

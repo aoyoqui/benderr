@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from br_tester.br_types import StepResult 
-from br_tester.br_types import StepCountError
+
+from br_tester.br_types import StepCountError, StepResult
+
 
 class Sequence(ABC):
     def __init__(self, steps):

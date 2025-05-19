@@ -1,7 +1,7 @@
 import pytest
+from br_tester.br_types import NumericComparator, NumericSpec, Spec, Step, StepCountError
 from br_tester.sequence import Sequence
-from br_tester.br_types import Step, NumericComparator, NumericSpec, Spec
-from br_tester.br_types import StepCountError
+
 
 def step_1():
     print("This is step 1")
