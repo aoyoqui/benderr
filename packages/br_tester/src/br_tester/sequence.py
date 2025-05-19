@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from br_tester.br_types import StepCountError, StepResult
+from br_tester.br_types import Step, StepCountError, StepResult
 
 
 class Sequence(ABC):
-    def __init__(self, steps):
+    def __init__(self, steps: list[Step]):
         self.steps = steps
         self.step_results = []
         self.count = 0
@@ -21,18 +21,22 @@ class Sequence(ABC):
         """Derive from this and implement the steps in this method"""
         pass
 
-    def step(self, f, *args):
+    def step(self, f, *args, **kwargs):
         if self.count > len(self.steps) - 1:
             raise StepCountError("More steps to report than there are specified!")
         print(f"{self.steps[self.count].id}: {self.steps[self.count].name}")
         print(f"Start time is {datetime.now()}")        
-        if args is not None:
-            result = f(*args) # deal with exceptions
-        else:
-            result = f()
+        result = Sequence._execute(f, *args, **kwargs)
         self._test(result)
         print(f"End time is {datetime.now()}")
         self.count += 1
+        return result
+
+    def _execute(f, *args, **kwargs):
+        if args is not None or kwargs is not None:
+            result = f(*args, **kwargs) # deal with exceptions
+        else:
+            result = f()
         return result
 
     def _test(self, *result):
