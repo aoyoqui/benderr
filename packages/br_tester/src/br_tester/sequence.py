@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from br_tester.br_types import Step, StepCountError, StepResult
+from br_tester.br_types import Step, StepCountError, StepResult, Verdict
 
 
 class Sequence(ABC):
@@ -53,12 +53,13 @@ class Sequence(ABC):
         # - tuple/list - If tuples of primitive types, use name from Spec, use same order as provided. Use with care
         #                If tuples of dataclasses, 
         print(f"Specs: {specs}")
-        if specs is None:
-            pass # Measurement result is passed
-        elif isinstance(specs, bool):
+        step_result = StepResult(self.steps[self.count].id, self.steps[self.count].name)
+        if specs is None or len(specs) == 0:
+            step_result.verdict = Verdict.PASSED
+        elif isinstance(result, bool):
             pass
-        elif isinstance(specs, str):
+        elif isinstance(result, str):
             pass
         else:
             pass
-        self.step_results.append(StepResult(self.steps[self.count].id, self.steps[self.count].name))
+        self.step_results.append(step_result)

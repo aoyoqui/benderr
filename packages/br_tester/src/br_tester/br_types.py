@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
@@ -21,6 +21,12 @@ class NumericComparator(StrEnum):
     LTGE = "< >="
     LEGT = "<= >"
     LEGE = "<= >="
+
+class Verdict(StrEnum):
+    UNDEFINED = "undefined"
+    PASSED = "passed"
+    FAILED = "failed"
+    ABORTED = "aborted"
 
 @dataclass
 class NoSpec:
@@ -53,12 +59,13 @@ class Measurement:
 class Step:
     id: int
     name: str
-    specs: list[Spec] = None
+    specs: list[Spec] = field(default_factory=list)
 
 @dataclass
 class StepResult:
     id: int
     name: str
+    verdict: Verdict = Verdict.UNDEFINED
     results: list[Measurement] = None
 
 class StepCountError(Exception):

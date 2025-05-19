@@ -1,7 +1,6 @@
 import pytest
-from br_tester.br_types import NumericComparator, NumericSpec, Spec, Step, StepCountError
+from br_tester.br_types import NumericComparator, NumericSpec, Spec, Step, StepCountError, Verdict
 from br_tester.sequence import Sequence
-
 
 
 def step_1():
@@ -120,5 +119,29 @@ def test_step_with_args_kwargs():
     assert(isinstance(result[1], type(_foo)) and result[1] == _foo)
     assert(isinstance(result[2], type(_bar)) and result[2] == _bar)
 
+
+class TestSequence2(Sequence):
+    __test__ = False
+    def sequence(self):
+        self.step(lambda x: x+1)
+        self.step(lambda _: 3.14)
+        self.step(print, "Foo")
+    
+def test_pass_no_specs():
+    steps = [
+        Step(1000, "Step Add", []), 
+        Step(2000, "Step Pi", []), 
+        Step(3000, "Step Print", [])
+    ]
+    sequence = TestSequence1(steps)
+    sequence.run()
+    assert(len(sequence.step_results) == len(sequence.steps))
+    for r in sequence.step_results:
+        assert(r.verdict == Verdict.PASSED)
+
+
+
 if __name__ == "__main__":
-    pytest.main() 
+    pytest.main(args=["-v"]) 
+
+
