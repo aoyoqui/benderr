@@ -1,7 +1,9 @@
 import argparse
 from importlib.metadata import entry_points
 from pathlib import Path
+
 from br_tester.configurator import steps_from_file
+
 
 def get_sequence(name: str):
     eps = entry_points(group="sequences")

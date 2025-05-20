@@ -1,7 +1,9 @@
 import time
 from pathlib import Path
-from br_tester.sequence import Sequence
+
 from br_tester.configurator import steps_from_file
+from br_tester.sequence import Sequence
+
 
 class DemoSequence(Sequence):
     def sequence(self):

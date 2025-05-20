@@ -1,12 +1,11 @@
 import time
-import pytest
 from datetime import datetime
+
+import pytest
 from br_tester.br_types import (
     BooleanSpec,
     NumericComparator,
     NumericSpec,
-    Spec,
-    SpecType,
     SpecMismatch,
     Step,
     StepCountError,

@@ -26,7 +26,7 @@ class Sequence(ABC):
 
     def step(self, f, *args, **kwargs):
         if self.count > len(self.steps) - 1:
-            # To do: how to handle this in the report. Create a new step?
+            # To do: how to handle this error in the report. Create a new step?
             raise StepCountError("More steps to report than there are specified!")
         step_result = StepResult(self.steps[self.count].id, self.steps[self.count].name, datetime.now())
         print(f"{self.steps[self.count].id}: {self.steps[self.count].name}")
@@ -34,7 +34,7 @@ class Sequence(ABC):
         try:
             result = Sequence._execute(f, *args, **kwargs)
             step_result = self._test(result, step_result)
-        except Exception as e:
+        except Exception:
             step_result.verdict = Verdict.ABORTED
             raise
         finally:

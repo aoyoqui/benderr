@@ -1,9 +1,10 @@
-from pydantic.dataclasses import dataclass
-from pydantic import Field
 from dataclasses import field
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Literal, Union, Annotated
+from typing import Annotated, Any, Literal, Union
+
+from pydantic import Field
+from pydantic.dataclasses import dataclass
 
 
 class NoSpecAction(StrEnum):

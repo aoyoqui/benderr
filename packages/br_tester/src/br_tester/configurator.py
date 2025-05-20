@@ -1,5 +1,7 @@
 import json
+
 from br_tester.br_types import Step
+
 
 def steps_from_file(file_path):
     with open(file_path) as f:
