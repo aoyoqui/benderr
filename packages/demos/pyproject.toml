@@ -1,0 +1,11 @@
+[tool.uv]
+package = true
+
+[project]
+name = "br_demos"
+version = "0.1.0"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]

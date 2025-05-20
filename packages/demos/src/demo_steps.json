@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Step 1",
+    "specs": [
+      {
+        "name": "Power Good Signal",
+        "pass_if_true": true,
+        "type": "boolean"
+      }    ]
+  },
+  {
+    "id": 2,
+    "name": "Safety State Verification",
+    "specs": [
+      {
+        "name": "Emergency Stop Active",
+        "pass_if_true": false,
+        "type": "boolean"
+      },
+      {
+        "name": "Safety Relay Closed",
+        "pass_if_true": true,
+        "type": "boolean"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Print Hello"
+  }
+]
