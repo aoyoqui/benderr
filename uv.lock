@@ -4,7 +4,7 @@ requires-python = ">=3.12"
 
 [manifest]
 members = [
-    "br-common",
+    "br-demos",
     "br-tester",
 ]
 
@@ -24,9 +24,9 @@ wheels = [
 ]
 
 [[package]]
-name = "br-common"
+name = "br-demos"
 version = "0.1.0"
-source = { editable = "packages/br_common" }
+source = { editable = "packages/demos" }
 
 [[package]]
 name = "br-tester"

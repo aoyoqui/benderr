@@ -14,8 +14,8 @@ dev = [
 [tool.uv.workspace]
 members = [
   "packages/br_tester",
-  "packages/br_common",
-  ]
+  "packages/demos",
+]
 
 [tool.uv.sources]
 br_tester = { workspace = true }

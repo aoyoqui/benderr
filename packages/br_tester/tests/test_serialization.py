@@ -1,23 +1,15 @@
 import pytest
 from pathlib import Path
-import json
-from br_tester.br_types import Step, BooleanSpec
-
+from br_tester.br_types import BooleanSpec
+from br_tester.configurator import steps_from_file
 
 def get_file_path(filename):
     json_path = Path(__file__).parent / "test_steps" / filename
     return json_path
 
-def load_steps(filename):
-    json_path = get_file_path(filename)
-    with open(json_path) as f:
-        data = json.load(f)
-
-    steps = [Step(**step) for step in data]
-    return steps
 
 def test_boolean_steps():
-    steps = load_steps("boolean_steps.json")
+    steps = steps_from_file(get_file_path("boolean_steps.json"))
     assert(len(steps) == 3)
     for i, s in enumerate(steps):
         assert(s.id == i+1)
