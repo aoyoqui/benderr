@@ -14,12 +14,15 @@ dev = [
 [tool.uv.workspace]
 members = [
   "packages/br_tester",
+  "packages/br_cli",
   "packages/demos",
 ]
 
 [tool.uv.sources]
 br_tester = { workspace = true }
+br_cli = { workspace = true }
 br_common = { workspace = true }
+demos = { workspace = true }
 
 [tool.ruff]
 line-length = 119
@@ -29,6 +32,8 @@ target-version = "py312"
 [tool.pytest.ini_options]
 pythonpath = [
   "packages/br_tester/src",
-  "packages/br_common/src"
+  "packages/br_common/src",
+  "packages/br_cli/src",
+  "packages/demos/src"
 ]
 
