@@ -81,8 +81,8 @@ class Sequence(ABC):
                 f"Result is a single boolean but more than one spec for this result has been defined: {specs}"
             )
         spec = specs[0]
-        if isinstance(spec.spec, BooleanSpec):
-            passed = (spec.spec.pass_if_true and result) or (not spec.spec.pass_if_true and not result)
+        if isinstance(spec, BooleanSpec):
+            passed = (spec.pass_if_true and result) or (not spec.pass_if_true and not result)
             step_result.verdict = Verdict.PASSED if passed else Verdict.FAILED
             step_result.results.append(Measurement(result, passed, spec))
         else:

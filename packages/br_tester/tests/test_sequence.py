@@ -6,6 +6,7 @@ from br_tester.br_types import (
     NumericComparator,
     NumericSpec,
     Spec,
+    SpecType,
     SpecMismatch,
     Step,
     StepCountError,
@@ -37,7 +38,7 @@ def test_sequence_init():
 
 def test_number_of_steps():
     steps = [
-        Step(1000, "Step 1", [Spec("voltage", NumericSpec(NumericComparator.GTLT, 0, 10, "V"))]), 
+        Step(1000, "Step 1", [NumericSpec("voltage", NumericComparator.GTLT, 0, 10, "V")]), 
         Step(2000, "Step 2", []), 
         Step(3000, "Step 3", [])
     ]
@@ -47,7 +48,7 @@ def test_number_of_steps():
 
 def test_fewer_steps_than_configured():
     steps = [
-        Step(1000, "Step 1", [Spec("voltage", NumericSpec(NumericComparator.GTLT, 0, 10, "V"))]), 
+        Step(1000, "Step 1", [NumericSpec("voltage", NumericComparator.GTLT, 0, 10, "V")]), 
         Step(2000, "Step 2", []), 
         Step(3000, "Step 3", []),
         Step(4000, "Step 4", [])
@@ -58,7 +59,7 @@ def test_fewer_steps_than_configured():
         
 def test_more_steps_than_configured():
     steps = [
-        Step(1000, "Step 1", [Spec("voltage", NumericSpec(NumericComparator.GTLT, 0, 10, "V"))]), 
+        Step(1000, "Step 1", [NumericSpec("voltage", NumericComparator.GTLT, 0, 10, "V")]), 
         Step(2000, "Step 2", []), 
     ]
     sequence = TestSequenceStepCount(steps)
@@ -160,10 +161,10 @@ class TestSequenceBooleanSpecs(Sequence):
     
 def test_boolean_spec_pass():
     steps = [
-        Step(1, "Step False", [Spec("ExpectedFalse", BooleanSpec(pass_if_true=False))]),
-        Step(2, "Step True", [Spec("ExpectedTrue", BooleanSpec(pass_if_true=True))]),
-        Step(1, "Step False", [Spec("ExpectedFalse", BooleanSpec(pass_if_true=False))]),
-        Step(2, "Step True", [Spec("ExpectedTrue", BooleanSpec(pass_if_true=True))]),
+        Step(1, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
+        Step(2, "Step True", [BooleanSpec("ExpectedTrue", pass_if_true=True)]),
+        Step(1, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
+        Step(2, "Step True", [BooleanSpec("ExpectedTrue", pass_if_true=True)]),
     ]
     sequence = TestSequenceBooleanSpecs(steps)
     sequence.run()
@@ -173,10 +174,10 @@ def test_boolean_spec_pass():
     
 def test_boolean_spec_fail():
     steps = [
-        Step(1, "Step True", [Spec("ExpectedTrue", BooleanSpec(pass_if_true=True))]),
-        Step(2, "Step True", [Spec("ExpectedTrue", BooleanSpec(pass_if_true=True))]),
-        Step(2, "Step False", [Spec("ExpectedFalse", BooleanSpec(pass_if_true=False))]),
-        Step(2, "Step False", [Spec("ExpectedFalse", BooleanSpec(pass_if_true=False))]),
+        Step(1, "Step True", [BooleanSpec("ExpectedTrue", pass_if_true=True)]),
+        Step(2, "Step True", [BooleanSpec("ExpectedTrue", pass_if_true=True)]),
+        Step(2, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
+        Step(2, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
     ]
     sequence = TestSequenceBooleanSpecs(steps)
     sequence.run()
@@ -205,7 +206,7 @@ class TestSequenceBooleanSpecMismatch(Sequence):
 
 def test_boolean_spec_mismatch():
     steps = [
-        Step(1, "Step True", [Spec("voltage", NumericSpec(NumericComparator.GTLT, 0, 10, "V"))]),
+        Step(1, "Step True", [NumericSpec("voltage", NumericComparator.GTLT, 0, 10, "V")]),
     ]
     sequence = TestSequenceBooleanSpecMismatch(steps)
     with pytest.raises(SpecMismatch):
@@ -216,8 +217,8 @@ def test_boolean_spec_mismatch():
             1, 
             "Step True", 
             [
-                Spec("ExpectedTrue", BooleanSpec(pass_if_true=True)), 
-                Spec("ExpectedFalse", BooleanSpec(False))
+                BooleanSpec("ExpectedTrue", True), 
+                BooleanSpec("ExpectedFalse", False)
             ]
         ),
     ]
@@ -255,5 +256,3 @@ def test_sequence_start_end_time():
 
 if __name__ == "__main__":
     pytest.main(args=["-v"]) 
-
-

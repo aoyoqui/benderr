@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "name": "Power-Up Check",
+    "specs": [
+      {
+        "name": "Power Good Signal",
+        "pass_if_true": true,
+        "type": "boolean"
+      },
+      {
+        "name": "Reset Released",
+        "pass_if_true": false,
+        "type": "boolean"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Safety State Verification",
+    "specs": [
+      {
+        "name": "Emergency Stop Active",
+        "pass_if_true": false,
+        "type": "boolean"
+      },
+      {
+        "name": "Safety Relay Closed",
+        "pass_if_true": true,
+        "type": "boolean"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "System Ready Confirmation",
+    "specs": [
+      {
+        "name": "System Ready Flag",
+        "pass_if_true": true,
+        "type": "boolean"
+      },
+      {
+        "name": "Watchdog OK",
+        "pass_if_true": true,
+        "type": "boolean"
+      }
+    ]
+  }
+]

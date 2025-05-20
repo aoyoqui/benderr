@@ -4,6 +4,9 @@ package = true
 [project]
 name = "br_tester"
 version = "0.1.0"
+dependencies = [
+    "pydantic>=2.11.4",
+]
 
 [tool.pytest.ini_options]
 pythonpath = [

@@ -1,7 +1,9 @@
-from dataclasses import dataclass, field
+from pydantic.dataclasses import dataclass
+from pydantic import Field
+from dataclasses import field
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal, Union, Annotated
 
 
 class NoSpecAction(StrEnum):
@@ -29,30 +31,44 @@ class Verdict(StrEnum):
     FAILED = "failed"
     ABORTED = "aborted"
 
+class SpecType(StrEnum):
+    NONE = "none"
+    NUMERIC = "numeric"
+    STRING = "string"
+    BOOLEAN = "boolean"
+
 @dataclass
 class NoSpec:
+    name: str
     action: NoSpecAction
+    type: Literal[SpecType.NONE] = SpecType.NONE
 
 @dataclass
 class BooleanSpec:
+    name: str
     pass_if_true: bool
+    type: Literal[SpecType.BOOLEAN] = SpecType.BOOLEAN
+   
 
 @dataclass
 class NumericSpec:
+    name: str
     comparator: NumericComparator
     lower: float | None = None
     upper: float | None = None
     units: str = ""
+    type: Literal[SpecType.NUMERIC] = SpecType.NUMERIC
 
 @dataclass
 class StringSpec:
     expected_value: str
     case_sensitive: bool
+    type: Literal[SpecType.STRING] = SpecType.STRING
 
-@dataclass
-class Spec:
-    name: str
-    spec: NoSpec | NumericSpec | StringSpec | BooleanSpec
+Spec = Annotated[
+    Union[NoSpec, NumericSpec, StringSpec, BooleanSpec],
+    Field(discriminator="type")
+]
 
 @dataclass
 class Measurement:
