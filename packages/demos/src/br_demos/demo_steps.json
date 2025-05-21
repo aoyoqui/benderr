@@ -1,32 +1,27 @@
 [
   {
     "id": 1,
-    "name": "Step 1",
+    "name": "Step 1. Boolean Spec",
     "specs": [
       {
-        "name": "Power Good Signal",
+        "name": "Pass if True",
         "pass_if_true": true,
         "type": "boolean"
       }    ]
   },
   {
     "id": 2,
-    "name": "Safety State Verification",
+    "name": "Step 2. Boolean Spec",
     "specs": [
       {
-        "name": "Emergency Stop Active",
+        "name": "Pass if False",
         "pass_if_true": false,
-        "type": "boolean"
-      },
-      {
-        "name": "Safety Relay Closed",
-        "pass_if_true": true,
         "type": "boolean"
       }
     ]
   },
   {
     "id": 3,
-    "name": "Print Hello"
+    "name": "Step 3. No Specs"
   }
 ]

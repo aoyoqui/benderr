@@ -21,7 +21,7 @@ def handle_step_ended(sender, result):
     for m in result.results:
         m_color = "green" if m.passed else "red"
         m_icon = "✔️" if m.passed else "✖️"
-        console.print(f"  {m_icon} [bold {m_color}]{m.spec.name}[/]: {m.value}")
+        console.print(f"  {m_icon} [bold {m_color}]{m.spec.name}[/]: [{m_color}]{m.value}")
 
 def get_sequence(name: str):
     eps = entry_points(group="sequences")

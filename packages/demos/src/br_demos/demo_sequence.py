@@ -12,17 +12,13 @@ class DemoSequence(Sequence):
         self.step(self.step_3)
 
     def step_1(self):
-        print("I am executing step 1")
-        time.sleep(1)
         return True
     
     def step_2(self):
-        print("I am executing step 2")
-        time.sleep(1)
+        return False
 
     def step_3(self):
-        print("I am executing step 3")
-        time.sleep(1)
+        pass
 
 if __name__ == "__main__":
     json_path = Path(__file__).parent / "demo_steps.json"
