@@ -82,9 +82,9 @@ class NumericSpec:
             ):
                 if self.lower is None or self.upper is None:
                     raise ValueError(f"Comparator {self.comparator} requires a lower and upper limit to be set")
+        if self.upper is not None and self.lower is not None and self.upper < self.lower:
+            raise ValueError("Upper limit should be greater or equal to lower limit")
         return self
-
-
 
 @dataclass
 class StringSpec:

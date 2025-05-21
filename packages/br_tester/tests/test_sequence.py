@@ -357,6 +357,17 @@ class TestSequenceNumericSpecMismatch(Sequence):
     def sequence(self):
         self.step(lambda : 3.14)
 
+def test_numeric_spec_validation():
+    with pytest.raises(ValueError):
+        NumericSpec("foo", NumericComparator.EQ, 0, -1)
+    with pytest.raises(ValueError):
+        NumericSpec("foo", NumericComparator.GTLT, 0, -1)
+    with pytest.raises(ValueError):
+        NumericSpec("foo", NumericComparator.GT, None, -1)
+    with pytest.raises(ValueError):
+        NumericSpec("foo", NumericComparator.LT, 0)
+    
+
 def test_numeric_spec_mismatch():
     steps = [
         Step(1, "Step True", [BooleanSpec("Foo", True)]),

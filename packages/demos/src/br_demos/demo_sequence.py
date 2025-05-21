@@ -9,6 +9,10 @@ class DemoSequence(Sequence):
         self.step(self.step_1)
         self.step(self.step_2)
         self.step(self.step_3)
+        self.step(lambda : 1)
+        self.step(lambda : -1)
+        self.step(lambda : 0)
+        self.step(lambda : 0.5)
 
     def step_1(self):
         return True
