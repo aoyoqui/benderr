@@ -4,6 +4,9 @@ package = true
 [project]
 name = "br_cli"
 version = "0.1.0"
+dependencies = [
+    "rich>=14.0.0",
+]
 
 [project.scripts]
 benderr = "br_cli.main:main"

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from br_tester.br_types import BooleanSpec, Measurement, SpecMismatch, Step, StepCountError, StepResult, Verdict
-
+from br_tester.events import step_started, step_ended
 
 class Sequence(ABC):
     def __init__(self, steps: list[Step]):
@@ -28,9 +28,8 @@ class Sequence(ABC):
         if self.count > len(self.steps) - 1:
             # To do: how to handle this error in the report. Create a new step?
             raise StepCountError("More steps to report than there are specified!")
+        step_started.send(self, step=self.steps[self.count])
         step_result = StepResult(self.steps[self.count].id, self.steps[self.count].name, datetime.now())
-        print(f"{self.steps[self.count].id}: {self.steps[self.count].name}")
-        print(f"Start time: {step_result.start_time}")        
         try:
             result = Sequence._execute(f, *args, **kwargs)
             step_result = self._test(result, step_result)
@@ -40,7 +39,7 @@ class Sequence(ABC):
         finally:
             step_result.end_time = datetime.now()
             self.step_results.append(step_result)
-            print(f"End time: {step_result.end_time}")
+            step_ended.send(self, result=step_result)
         self.count += 1
         return result
 
@@ -64,7 +63,6 @@ class Sequence(ABC):
         #               Nested dataclasses not supported
         # - tuple/list - If tuples of primitive types, use name from Spec, use same order as provided. Use with care
         #                If tuples of dataclasses, 
-        print(f"Specs: {specs}")
         if specs is None or len(specs) == 0:
             step_result.verdict = Verdict.PASSED
         elif isinstance(result, bool):
