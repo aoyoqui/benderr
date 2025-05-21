@@ -14,7 +14,8 @@ class DemoSequence(Sequence):
     def step_1(self):
         print("I am executing step 1")
         time.sleep(1)
-
+        return True
+    
     def step_2(self):
         print("I am executing step 2")
         time.sleep(1)
