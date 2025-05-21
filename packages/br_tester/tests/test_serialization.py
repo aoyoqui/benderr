@@ -12,16 +12,16 @@ def get_file_path(filename):
 
 def test_boolean_steps():
     steps = steps_from_file(get_file_path("boolean_steps.json"))
-    assert(len(steps) == 3)
+    assert len(steps) == 3
     for i, s in enumerate(steps):
-        assert(s.id == i+1)
-        assert(len(s.specs) == 2)
-        assert(isinstance(s.specs[0], BooleanSpec))
-        assert(isinstance(s.specs[1], BooleanSpec))
-    assert(steps[0].name == "Power-Up Check")
-    assert(steps[1].name == "Safety State Verification")
-    assert(steps[2].name == "System Ready Confirmation")
+        assert s.id == i + 1
+        assert len(s.specs) == 2
+        assert isinstance(s.specs[0], BooleanSpec)
+        assert isinstance(s.specs[1], BooleanSpec)
+    assert steps[0].name == "Power-Up Check"
+    assert steps[1].name == "Safety State Verification"
+    assert steps[2].name == "System Ready Confirmation"
+
 
 if __name__ == "__main__":
-    pytest.main(args=["-v"]) 
-
+    pytest.main(args=["-v"])

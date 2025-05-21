@@ -2,8 +2,19 @@ import numbers
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from br_tester.br_types import NumericSpec, BooleanSpec, Measurement, SpecMismatch, Step, StepCountError, StepResult, Verdict, NumericComparator, InvalidSpec
-from br_tester.events import step_started, step_ended
+from br_tester.br_types import (
+    BooleanSpec,
+    Measurement,
+    NumericComparator,
+    NumericSpec,
+    SpecMismatch,
+    Step,
+    StepCountError,
+    StepResult,
+    Verdict,
+)
+from br_tester.events import step_ended, step_started
+
 
 class Sequence(ABC):
     def __init__(self, steps: list[Step]):
@@ -28,7 +39,9 @@ class Sequence(ABC):
     def step(self, f, *args, **kwargs):
         if self.count > len(self.steps) - 1:
             # To do: how to handle this error in the report. Create a new step?
-            raise StepCountError(f"More steps to report({self.count+1}) than there are specified({len(self.steps)})!")
+            raise StepCountError(
+                f"More steps to report({self.count + 1}) than there are specified({len(self.steps)})!"
+            )
         step_started.send(self, step=self.steps[self.count])
         step_result = StepResult(self.steps[self.count].id, self.steps[self.count].name, datetime.now())
         try:
@@ -46,7 +59,7 @@ class Sequence(ABC):
 
     def _execute(f, *args, **kwargs):
         if args is not None or kwargs is not None:
-            result = f(*args, **kwargs) # deal with exceptions
+            result = f(*args, **kwargs)  # deal with exceptions
         else:
             result = f()
         return result
@@ -59,11 +72,11 @@ class Sequence(ABC):
         # - bool - Spec supported is check_if_true, check_if_fals. len(specs) == 1. Take name from Spec
         # - str - Spec supported StringSpec. len(specs) == 1. Take name from Spec
         # - num - Spec supported NumericSpec. len(specs) == 1. Take name from Spec
-        # - dataclass - Convention to check for attribute name in dataclass and compare to that value 
+        # - dataclass - Convention to check for attribute name in dataclass and compare to that value
         #               using the other supported datatypes. len(specs) >= number of attributes
         #               Nested dataclasses not supported
         # - tuple/list - If tuples of primitive types, use name from Spec, use same order as provided. Use with care
-        #                If tuples of dataclasses, 
+        #                If tuples of dataclasses,
         if specs is None or len(specs) == 0:
             step_result.verdict = Verdict.PASSED
         elif isinstance(result, bool):
@@ -75,7 +88,7 @@ class Sequence(ABC):
         return step_result
 
     def _test_boolean(self, result, specs, step_result: StepResult):
-        if(len(specs) > 1):
+        if len(specs) > 1:
             raise SpecMismatch(
                 f"Result is a single boolean but more than one spec for this result has been defined: {specs}"
             )
@@ -89,7 +102,7 @@ class Sequence(ABC):
         return step_result
 
     def _test_numeric(self, result, specs, step_result: StepResult):
-        if(len(specs) > 1):
+        if len(specs) > 1:
             raise SpecMismatch(
                 f"Result is a single number but more than one spec for this result has been defined: {specs}"
             )

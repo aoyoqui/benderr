@@ -33,6 +33,7 @@
         "name": "Pass if value is greater than lower limit",
         "comparator": "GT",
         "lower": 0,
+        "units": "V",
         "type": "numeric"
       }
     ]
@@ -45,6 +46,7 @@
         "name": "Pass if value is less or equal than upper limit",
         "comparator": "LE",
         "upper": 0,
+        "units": "mA",
         "type": "numeric"
       }
     ]
@@ -57,6 +59,7 @@
         "name": "Pass if value is equal to lower limit",
         "comparator": "EQ",
         "lower": 0.0,
+        "units": "dB",
         "type": "numeric"
       }
     ]
@@ -70,6 +73,7 @@
         "comparator": "GELE",
         "lower": 0,
         "upper": 1,
+        "units": "%",
         "type": "numeric"
       }
     ]

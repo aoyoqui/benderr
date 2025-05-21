@@ -11,6 +11,7 @@ class NoSpecAction(StrEnum):
     LOG = "log"
     IGNORE = "ignore"
 
+
 class NumericComparator(StrEnum):
     GT = "GT"
     GE = "GE"
@@ -27,11 +28,13 @@ class NumericComparator(StrEnum):
     LEGT = "LEGT"
     LEGE = "LEGE"
 
+
 class Verdict(StrEnum):
     UNDEFINED = "undefined"
     PASSED = "passed"
     FAILED = "failed"
     ABORTED = "aborted"
+
 
 class SpecType(StrEnum):
     NONE = "none"
@@ -39,18 +42,20 @@ class SpecType(StrEnum):
     STRING = "string"
     BOOLEAN = "boolean"
 
+
 @dataclass
 class NoSpec:
     name: str
     action: NoSpecAction
     type: Literal[SpecType.NONE] = SpecType.NONE
 
+
 @dataclass
 class BooleanSpec:
     name: str
     pass_if_true: bool
     type: Literal[SpecType.BOOLEAN] = SpecType.BOOLEAN
-   
+
 
 @dataclass
 class NumericSpec:
@@ -61,7 +66,7 @@ class NumericSpec:
     units: str = ""
     type: Literal[SpecType.NUMERIC] = SpecType.NUMERIC
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_limits(self):
         match self.comparator:
             case NumericComparator.GT | NumericComparator.GE | NumericComparator.EQ | NumericComparator.NEQ:
@@ -71,13 +76,13 @@ class NumericSpec:
                 if self.upper is None:
                     raise ValueError(f"Comparator {self.comparator} requires an upper limit to be set")
             case (
-                NumericComparator.GTLT 
-                | NumericComparator.GELT 
-                | NumericComparator.GTLE 
-                | NumericComparator.GELE 
-                | NumericComparator.LTGT 
-                | NumericComparator.LTGE 
-                | NumericComparator.LEGT 
+                NumericComparator.GTLT
+                | NumericComparator.GELT
+                | NumericComparator.GTLE
+                | NumericComparator.GELE
+                | NumericComparator.LTGT
+                | NumericComparator.LTGE
+                | NumericComparator.LEGT
                 | NumericComparator.LEGE
             ):
                 if self.lower is None or self.upper is None:
@@ -86,16 +91,16 @@ class NumericSpec:
             raise ValueError("Upper limit should be greater or equal to lower limit")
         return self
 
+
 @dataclass
 class StringSpec:
     expected_value: str
     case_sensitive: bool
     type: Literal[SpecType.STRING] = SpecType.STRING
 
-Spec = Annotated[
-    Union[NoSpec, NumericSpec, StringSpec, BooleanSpec],
-    Field(discriminator="type")
-]
+
+Spec = Annotated[Union[NoSpec, NumericSpec, StringSpec, BooleanSpec], Field(discriminator="type")]
+
 
 @dataclass
 class Measurement:
@@ -103,11 +108,13 @@ class Measurement:
     passed: bool
     spec: Spec
 
+
 @dataclass
 class Step:
     id: int
     name: str
     specs: list[Spec] = field(default_factory=list)
+
 
 @dataclass
 class StepResult:
@@ -118,11 +125,14 @@ class StepResult:
     verdict: Verdict = Verdict.UNDEFINED
     results: list[Measurement] = field(default_factory=list)
 
+
 class StepCountError(Exception):
     pass
 
+
 class SpecMismatch(Exception):
-    pass    
+    pass
+
 
 class InvalidSpec(Exception):
-    pass    
+    pass
