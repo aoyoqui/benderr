@@ -1,7 +1,8 @@
+import numbers
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from br_tester.br_types import BooleanSpec, Measurement, SpecMismatch, Step, StepCountError, StepResult, Verdict
+from br_tester.br_types import NumericSpec, BooleanSpec, Measurement, SpecMismatch, Step, StepCountError, StepResult, Verdict, NumericComparator, InvalidSpec
 from br_tester.events import step_started, step_ended
 
 class Sequence(ABC):
@@ -14,7 +15,7 @@ class Sequence(ABC):
         """Call run to execute a sequence. Do not call sequence directly"""
         self.sequence()
         if self.count != len(self.steps):
-            raise StepCountError("Fewer steps to report than there are specified!")
+            raise StepCountError(f"Fewer steps to report({self.count}) than there are specified({len(self.steps)})!")
 
     @abstractmethod
     def sequence(self):
@@ -27,7 +28,7 @@ class Sequence(ABC):
     def step(self, f, *args, **kwargs):
         if self.count > len(self.steps) - 1:
             # To do: how to handle this error in the report. Create a new step?
-            raise StepCountError("More steps to report than there are specified!")
+            raise StepCountError(f"More steps to report({self.count+1}) than there are specified({len(self.steps)})!")
         step_started.send(self, step=self.steps[self.count])
         step_result = StepResult(self.steps[self.count].id, self.steps[self.count].name, datetime.now())
         try:
@@ -67,8 +68,8 @@ class Sequence(ABC):
             step_result.verdict = Verdict.PASSED
         elif isinstance(result, bool):
             step_result = self._test_boolean(result, specs, step_result)
-        elif isinstance(result, str):
-            pass
+        elif isinstance(result, numbers.Number):
+            step_result = self._test_numeric(result, specs, step_result)
         else:
             pass
         return step_result
@@ -85,4 +86,47 @@ class Sequence(ABC):
             step_result.results.append(Measurement(result, passed, spec))
         else:
             raise SpecMismatch(f"Result is a single boolean but spec does not define a boolean check: {spec}")
+        return step_result
+
+    def _test_numeric(self, result, specs, step_result: StepResult):
+        if(len(specs) > 1):
+            raise SpecMismatch(
+                f"Result is a single number but more than one spec for this result has been defined: {specs}"
+            )
+        spec = specs[0]
+        if isinstance(spec, NumericSpec):
+            match spec.comparator:
+                case NumericComparator.GT:
+                    passed = result > spec.lower
+                case NumericComparator.GE:
+                    passed = result >= spec.lower
+                case NumericComparator.LT:
+                    passed = result < spec.upper
+                case NumericComparator.LE:
+                    passed = result <= spec.upper
+                case NumericComparator.EQ:
+                    passed = result == spec.lower
+                case NumericComparator.NEQ:
+                    passed = result != spec.lower
+                case NumericComparator.GTLT:
+                    passed = spec.lower < result < spec.upper
+                case NumericComparator.GELT:
+                    passed = spec.lower <= result < spec.upper
+                case NumericComparator.GTLE:
+                    passed = spec.lower < result <= spec.upper
+                case NumericComparator.GELE:
+                    passed = spec.lower <= result <= spec.upper
+                case NumericComparator.LTGT:
+                    passed = spec.lower > result or result > spec.upper
+                case NumericComparator.LTGE:
+                    passed = spec.lower > result or result >= spec.upper
+                case NumericComparator.LEGT:
+                    passed = spec.lower >= result or result > spec.upper
+                case NumericComparator.LEGE:
+                    passed = spec.lower >= result or result >= spec.upper
+
+            step_result.verdict = Verdict.PASSED if passed else Verdict.FAILED
+            step_result.results.append(Measurement(result, passed, spec))
+        else:
+            raise SpecMismatch(f"Result is a single number but spec does not define a numeric test: {spec}")
         return step_result

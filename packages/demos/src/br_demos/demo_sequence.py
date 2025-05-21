@@ -1,4 +1,3 @@
-import time
 from pathlib import Path
 
 from br_tester.configurator import steps_from_file

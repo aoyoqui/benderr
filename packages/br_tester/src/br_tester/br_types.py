@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal, Union
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic.dataclasses import dataclass
 
 
@@ -12,19 +12,20 @@ class NoSpecAction(StrEnum):
     IGNORE = "ignore"
 
 class NumericComparator(StrEnum):
-    GT = ">"
-    GE = ">="
-    LT = "<"
-    LE = "<="
-    EQ = "=="
-    GTLT = "> <"
-    GELT = ">= <"
-    GTLE = "> <="
-    GELE = ">= <="
-    LTGT = "< >"
-    LTGE = "< >="
-    LEGT = "<= >"
-    LEGE = "<= >="
+    GT = "GT"
+    GE = "GE"
+    LT = "LT"
+    LE = "LE"
+    EQ = "EQ"
+    NEQ = "NEQ"
+    GTLT = "GTLT"
+    GELT = "GELT"
+    GTLE = "GTLE"
+    GELE = "GELE"
+    LTGT = "LTGT"
+    LTGE = "LTGE"
+    LEGT = "LEGT"
+    LEGE = "LEGE"
 
 class Verdict(StrEnum):
     UNDEFINED = "undefined"
@@ -59,6 +60,31 @@ class NumericSpec:
     upper: float | None = None
     units: str = ""
     type: Literal[SpecType.NUMERIC] = SpecType.NUMERIC
+
+    @model_validator(mode='after')
+    def check_limits(self):
+        match self.comparator:
+            case NumericComparator.GT | NumericComparator.GE | NumericComparator.EQ | NumericComparator.NEQ:
+                if self.lower is None:
+                    raise ValueError(f"Comparator {self.comparator} requires a lower limit to be set")
+            case NumericComparator.LT | NumericComparator.LE:
+                if self.upper is None:
+                    raise ValueError(f"Comparator {self.comparator} requires an upper limit to be set")
+            case (
+                NumericComparator.GTLT 
+                | NumericComparator.GELT 
+                | NumericComparator.GTLE 
+                | NumericComparator.GELE 
+                | NumericComparator.LTGT 
+                | NumericComparator.LTGE 
+                | NumericComparator.LEGT 
+                | NumericComparator.LEGE
+            ):
+                if self.lower is None or self.upper is None:
+                    raise ValueError(f"Comparator {self.comparator} requires a lower and upper limit to be set")
+        return self
+
+
 
 @dataclass
 class StringSpec:
@@ -96,4 +122,7 @@ class StepCountError(Exception):
     pass
 
 class SpecMismatch(Exception):
+    pass    
+
+class InvalidSpec(Exception):
     pass    
