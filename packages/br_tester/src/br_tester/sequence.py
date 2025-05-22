@@ -69,9 +69,7 @@ class Sequence(ABC):
         # How do we turn a list of Specs into a list of Measurement
         # First, we need to process the result in some way. What form can result have? WHat should we support??
         # Supported types:
-        # - bool - Spec supported is check_if_true, check_if_fals. len(specs) == 1. Take name from Spec
         # - str - Spec supported StringSpec. len(specs) == 1. Take name from Spec
-        # - num - Spec supported NumericSpec. len(specs) == 1. Take name from Spec
         # - dataclass - Convention to check for attribute name in dataclass and compare to that value
         #               using the other supported datatypes. len(specs) >= number of attributes
         #               Nested dataclasses not supported
