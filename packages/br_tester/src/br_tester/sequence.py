@@ -16,17 +16,14 @@ from br_tester.br_types import (
     StepCountError,
     StepResult,
     Verdict,
+    StepsConfigError
 )
 from br_tester.events import step_ended, step_started
 
 
 class Sequence(ABC):
     def __init__(self, steps: list[Step]):
-        step_names_return = self.declared_steps_with_return()
-        if len(step_names_return) != len(steps):
-            raise StepCountError(
-                f"Executable steps count ({len(step_names_return)}) do not match configured steps count({len(steps)}!)"
-            )
+        self.validate_steps(steps)
         self.steps = steps
         self.step_results = []
 
@@ -47,6 +44,7 @@ class Sequence(ABC):
         step_started.send(self, step=config_step)
         step_result = StepResult(config_step.id, config_step.name, datetime.now())
         try:
+            kwargs.pop('step_name', None)
             result = Sequence._execute(f, *args, **kwargs)
             step_result = self._test(result, step_result, config_step.specs)
         except Exception:
@@ -180,7 +178,7 @@ class Sequence(ABC):
                         (
                             kw.value.value
                             for kw in node.keywords
-                            if kw.arg == "name" and isinstance(kw.value, ast.Constant)
+                            if kw.arg == "step_name" and isinstance(kw.value, ast.Constant)
                         ),
                         None,
                     )
@@ -252,3 +250,13 @@ class Sequence(ABC):
             results.append((name, ret_type))
 
         return results
+
+    def validate_steps(self, config_steps: list[Step]):
+        self_steps = self.declared_steps_with_return()
+        if len(self_steps) != len(config_steps):
+            raise StepCountError(
+                f"Executable steps count ({len(self_steps)}) do not match configured steps count({len(config_steps)}!)"
+            )
+        for i, step in enumerate(config_steps):
+            if self_steps[i][0] != step.name :
+                raise StepsConfigError(f"Declared step with name {self_steps[i][0]} differs from config {step.name}")

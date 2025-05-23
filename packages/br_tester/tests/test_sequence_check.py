@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 import pytest
-from br_tester.sequence import Sequence
+from br_tester.sequence import Sequence, Step, StepsConfigError
 from pydantic.dataclasses import dataclass as pddataclass
 
 
@@ -36,7 +36,7 @@ class TestSequence(Sequence):
         self.step(self.return_none_with_arguments, result)
         self.step(self.return_tuple)
         self.step(self.return_annotated_tuple)
-        self.step(self.return_boolean, name="New name")
+        self.step(self.return_boolean, step_name="New name")
 
     def return_unknown(self):
         return True
@@ -77,7 +77,7 @@ class TestSequence(Sequence):
 
 def test_sequence_check():
     steps = TestSequence.declared_steps_with_return()
-    print(steps)
+
     assert len(steps) == 14
     assert steps[0][0] == "lambda"
     assert steps[0][1] == "bool"
@@ -107,6 +107,32 @@ def test_sequence_check():
     assert steps[12][1] == "tuple[int, int]"
     assert steps[13][0] == "New name"
 
+def external_step(foo):
+    return False
+
+class TestStepName(Sequence):
+    __test__ = False
+    def sequence(self):
+        self.step(lambda : True)
+        self.step(external_step)
+        self.step(external_step, step_name="repeat")
+        self.step(self.internal_step, step_name="Internal Step")
+
+    def internal_step(self):
+        pass
+
+def test_step_names():
+    steps = [
+        Step(1, "lambda"),
+        Step(2, "external_step"),
+        Step(3, "repeat"),
+        Step(4, "Internal Step"),
+    ]
+    TestStepName(steps)
+    steps[1].name = "Name the configured step but not updating the sequence code accordingly"
+    with pytest.raises(StepsConfigError):
+        TestStepName(steps)
+
 
 if __name__ == "__main__":
-    pytest.main(["-v"])
+    pytest.main(["-v", "-rPx"]) 

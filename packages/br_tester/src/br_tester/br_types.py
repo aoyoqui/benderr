@@ -136,3 +136,7 @@ class SpecMismatch(Exception):
 
 class InvalidSpec(Exception):
     pass
+
+
+class StepsConfigError(Exception):
+    pass

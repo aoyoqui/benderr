@@ -31,9 +31,9 @@ class TestSequenceStepCount(Sequence):
     __test__ = False
 
     def sequence(self):
-        self.step(step_1)
-        self.step(step_2, 1)
-        self.step(step_3, 0, "foo")
+        self.step(step_1, step_name="Step 1")
+        self.step(step_2, 1, step_name="Step 2")
+        self.step(step_3, 0, "foo", step_name="Step 3")
 
 
 def test_sequence_init():
@@ -162,9 +162,9 @@ class TestSequenceNoSpecs(Sequence):
     __test__ = False
 
     def sequence(self):
-        self.step(lambda x: x + 1, 3.0)
-        self.step(lambda: 3.14)
-        self.step(print, "Foo")
+        self.step(lambda x: x + 1, 3.0, step_name="Step Add")
+        self.step(lambda: 3.14, step_name="Step Pi")
+        self.step(print, "Foo", step_name="Step Print")
 
 
 def test_pass_no_specs():
@@ -192,10 +192,10 @@ class TestSequenceBooleanSpecs(Sequence):
     __test__ = False
 
     def sequence(self):
-        self.step(lambda: False)
-        self.step(lambda: True)
-        self.step(lambda: False)
-        self.step(lambda: True)
+        self.step(lambda: False, step_name="Step True")
+        self.step(lambda: True, step_name="Step True")
+        self.step(lambda: False, step_name="Step False")
+        self.step(lambda: True, step_name="Step False")
 
 
 def test_boolean_steps():
@@ -261,7 +261,7 @@ class TestSequenceStartEndTime(Sequence):
 
 
 def test_sequence_start_end_time():
-    sequence = TestSequenceStartEndTime([Step(1, "Test Time"), Step(2, "Error")])
+    sequence = TestSequenceStartEndTime([Step(1, "delay_10ms"), Step(2, "step_raise_exception")])
     now = datetime.now()
     with pytest.raises(StartEndTimeCustomError):
         sequence.run()
@@ -400,10 +400,10 @@ class TestSequenceNumericSpecs(Sequence):
 
 def test_numeric_steps():
     steps = [
-        Step(1, "Step GT", [NumericSpec("Expect pass", NumericComparator.GT, 0)]),
-        Step(2, "Step NEQ", [NumericSpec("Expect pass", NumericComparator.NEQ, 0)]),
-        Step(2, "Step GTLE", [NumericSpec("Expect fail", NumericComparator.GTLE, 0, 1)]),
-        Step(2, "Step LEGE", [NumericSpec("Expect fail", NumericComparator.LEGE, -2, 2)]),
+        Step(1, "lambda", [NumericSpec("Expect pass", NumericComparator.GT, 0)]),
+        Step(2, "lambda", [NumericSpec("Expect pass", NumericComparator.NEQ, 0)]),
+        Step(2, "lambda", [NumericSpec("Expect fail", NumericComparator.GTLE, 0, 1)]),
+        Step(2, "lambda", [NumericSpec("Expect fail", NumericComparator.LEGE, -2, 2)]),
     ]
     step_count = len(steps)
     sequence = TestSequenceNumericSpecs(steps)
