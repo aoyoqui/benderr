@@ -1,6 +1,8 @@
 import numbers
 from abc import ABC, abstractmethod
 from datetime import datetime
+import inspect, ast, textwrap, numbers
+from typing import get_type_hints, get_origin
 
 from br_tester.br_types import (
     BooleanSpec,
@@ -15,18 +17,17 @@ from br_tester.br_types import (
 )
 from br_tester.events import step_ended, step_started
 
-
 class Sequence(ABC):
     def __init__(self, steps: list[Step]):
+        step_names_return = self.declared_steps_with_return()
+        if len(step_names_return) != len(steps):
+            raise StepCountError(f"Executable steps count ({len(step_names_return)}) do not match configured steps count({len(steps)}!)")
         self.steps = steps
         self.step_results = []
-        self.count = 0
 
     def run(self):
         """Call run to execute a sequence. Do not call sequence directly"""
         self.sequence()
-        if self.count != len(self.steps):
-            raise StepCountError(f"Fewer steps to report({self.count}) than there are specified({len(self.steps)})!")
 
     @abstractmethod
     def sequence(self):
@@ -37,16 +38,12 @@ class Sequence(ABC):
         pass
 
     def step(self, f, *args, **kwargs):
-        if self.count > len(self.steps) - 1:
-            # To do: how to handle this error in the report. Create a new step?
-            raise StepCountError(
-                f"More steps to report({self.count + 1}) than there are specified({len(self.steps)})!"
-            )
-        step_started.send(self, step=self.steps[self.count])
-        step_result = StepResult(self.steps[self.count].id, self.steps[self.count].name, datetime.now())
+        config_step = self.steps.pop(0)
+        step_started.send(self, step=config_step)
+        step_result = StepResult(config_step.id, config_step.name, datetime.now())
         try:
             result = Sequence._execute(f, *args, **kwargs)
-            step_result = self._test(result, step_result)
+            step_result = self._test(result, step_result, config_step.specs)
         except Exception:
             step_result.verdict = Verdict.ABORTED
             raise
@@ -54,7 +51,6 @@ class Sequence(ABC):
             step_result.end_time = datetime.now()
             self.step_results.append(step_result)
             step_ended.send(self, result=step_result)
-        self.count += 1
         return result
 
     def _execute(f, *args, **kwargs):
@@ -64,8 +60,7 @@ class Sequence(ABC):
             result = f()
         return result
 
-    def _test(self, result, step_result: StepResult) -> StepResult:
-        specs = self.steps[self.count].specs
+    def _test(self, result, step_result: StepResult, specs) -> StepResult:
         # How do we turn a list of Specs into a list of Measurement
         # First, we need to process the result in some way. What form can result have? WHat should we support??
         # Supported types:
@@ -141,3 +136,102 @@ class Sequence(ABC):
         else:
             raise SpecMismatch(f"Result is a single number but spec does not define a numeric test: {spec}")
         return step_result
+    
+    @classmethod
+    def declared_steps_with_return(cls) -> list[tuple[str, str]]:
+        """
+        Inspect the source of cls.sequence() and return a list of
+        (step_name, return_type) as per our AST extractor logic.
+        """
+        # grab and dedent
+        source = inspect.getsource(cls.sequence)
+        source = textwrap.dedent(source)
+        tree = ast.parse(source)
+
+        # collect all step(...) calls
+        calls: list[tuple[str|None, ast.expr|None]] = []
+        class V(ast.NodeVisitor):
+            def visit_Call(self, node: ast.Call):
+                if (
+                    isinstance(node.func, ast.Attribute)
+                    and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "self"
+                    and node.func.attr == "step"
+                ):
+                    custom = next(
+                        (kw.value.value for kw in node.keywords
+                         if kw.arg=="name" and isinstance(kw.value, ast.Constant)),
+                        None
+                    )
+                    pos = node.args[0] if node.args else None
+                    calls.append((custom, pos))
+                self.generic_visit(node)
+
+        V().visit(tree)
+
+        results: list[tuple[str, str]] = []
+
+        def is_numeric_val(v):
+            return isinstance(v, numbers.Number) and not isinstance(v, bool)
+
+        for custom, pos in calls:
+            # 1) name
+            if custom is not None:
+                name = custom
+            elif isinstance(pos, ast.Attribute):
+                name = pos.attr
+            elif isinstance(pos, ast.Name):
+                name = pos.id
+            elif isinstance(pos, ast.Lambda):
+                name = "<lambda>"
+            else:
+                name = "<unknown>"
+
+            # 2) return-type
+            ret_type = "unknown"
+            # Lambda literal inference
+            if isinstance(pos, ast.Lambda):
+                body = pos.body
+                if isinstance(body, ast.Constant) and isinstance(body.value, bool):
+                    ret_type = "bool"
+                elif (
+                    (isinstance(body, ast.Constant) and is_numeric_val(body.value))
+                    or
+                    (isinstance(body, ast.UnaryOp)
+                     and isinstance(body.op, ast.USub)
+                     and isinstance(body.operand, ast.Constant)
+                     and is_numeric_val(body.operand.value))
+                ):
+                    ret_type = "numeric"
+                elif isinstance(body, ast.Constant) and isinstance(body.value, str):
+                    ret_type = "str"
+            else:
+                # Named method — use annotations
+                fn_name = (
+                    pos.attr if isinstance(pos, ast.Attribute)
+                    else pos.id if isinstance(pos, ast.Name)
+                    else None
+                )
+                if fn_name:
+                    fn = getattr(cls, fn_name, None)
+                    if fn:
+                        hints = get_type_hints(fn, include_extras=False)
+                        ann = hints.get("return", None)
+
+                        # generics?
+                        origin = get_origin(ann) or ann
+
+                        if ann is bool:
+                            ret_type = "bool"
+                        elif isinstance(origin, type) and issubclass(origin, numbers.Number):
+                            ret_type = "numeric"
+                        elif ann is str:
+                            ret_type = "str"
+                        elif isinstance(origin, type):
+                            # any other class (including dataclasses/Pydantic)
+                            ret_type = origin.__name__
+
+            results.append((name, ret_type))
+
+        return results
+

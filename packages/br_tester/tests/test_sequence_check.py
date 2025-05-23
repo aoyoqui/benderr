@@ -33,6 +33,7 @@ class TestSequence(Sequence):
         self.step(self.return_none_with_arguments, result)
         self.step(self.return_tuple)
         self.step(self.return_annotated_tuple)
+        self.step(self.return_boolean, name="New name")
 
     def return_unknown(self):
         return True
@@ -73,7 +74,7 @@ class TestSequence(Sequence):
 def test_sequence_check():
     steps = extract_steps_with_return(TestSequence)
     print(steps)
-    assert len(steps) == 13
+    assert len(steps) == 14
     assert steps[0][0] == "lambda"
     assert steps[0][1] == "bool"
     assert steps[1][0] == "return_unknown"
@@ -100,6 +101,7 @@ def test_sequence_check():
     assert steps[11][1] == "tuple"
     assert steps[12][0] == "return_annotated_tuple"
     assert steps[12][1] == "tuple[int, int]"
+    assert steps[13][0] == "New name"
 
 if __name__ == "__main__":
     pytest.main(["-v"])

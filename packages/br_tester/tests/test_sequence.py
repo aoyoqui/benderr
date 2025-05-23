@@ -36,9 +36,8 @@ class TestSequenceStepCount(Sequence):
 
 
 def test_sequence_init():
-    sequence = TestSequenceStepCount([])
-    assert len(sequence.steps) == 0
-    assert sequence.count == 0
+    with pytest.raises(StepCountError):
+        TestSequenceStepCount([])
 
 
 def test_number_of_steps():
@@ -47,9 +46,10 @@ def test_number_of_steps():
         Step(2000, "Step 2", []),
         Step(3000, "Step 3", []),
     ]
+    step_count = len(steps)
     sequence = TestSequenceStepCount(steps)
     sequence.run()
-    assert len(sequence.step_results) == len(sequence.steps)
+    assert len(sequence.step_results) == step_count
 
 
 def test_fewer_steps_than_configured():
@@ -59,9 +59,8 @@ def test_fewer_steps_than_configured():
         Step(3000, "Step 3", []),
         Step(4000, "Step 4", []),
     ]
-    sequence = TestSequenceStepCount(steps)
     with pytest.raises(StepCountError):
-        sequence.run()
+        TestSequenceStepCount(steps)
 
 
 def test_more_steps_than_configured():
@@ -69,9 +68,8 @@ def test_more_steps_than_configured():
         Step(1000, "Step 1", [NumericSpec("voltage", NumericComparator.GTLT, 0, 10, "V")]),
         Step(2000, "Step 2", []),
     ]
-    sequence = TestSequenceStepCount(steps)
     with pytest.raises(StepCountError):
-        sequence.run()
+        TestSequenceStepCount(steps)
 
 
 def test_no_return():
@@ -170,9 +168,10 @@ class TestSequenceNoSpecs(Sequence):
 
 def test_pass_no_specs():
     steps = [Step(1000, "Step Add", []), Step(2000, "Step Pi", []), Step(3000, "Step Print", [])]
+    step_count = len(steps)
     sequence = TestSequenceNoSpecs(steps)
     sequence.run()
-    assert len(sequence.step_results) == len(sequence.steps)
+    assert len(sequence.step_results) == step_count
     for r in sequence.step_results:
         assert r.verdict == Verdict.PASSED
 
@@ -194,9 +193,10 @@ def test_boolean_spec_pass():
         Step(1, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
         Step(2, "Step True", [BooleanSpec("ExpectedTrue", pass_if_true=True)]),
     ]
+    step_count = len(steps)
     sequence = TestSequenceBooleanSpecs(steps)
     sequence.run()
-    assert len(sequence.step_results) == len(sequence.steps)
+    assert len(sequence.step_results) == step_count
     for r in sequence.step_results:
         assert r.verdict == Verdict.PASSED
 
@@ -208,9 +208,10 @@ def test_boolean_spec_fail():
         Step(2, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
         Step(2, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
     ]
+    step_count = len(steps)
     sequence = TestSequenceBooleanSpecs(steps)
     sequence.run()
-    assert len(sequence.step_results) == len(sequence.steps)
+    assert len(sequence.step_results) == step_count
     assert sequence.step_results[0].verdict == Verdict.FAILED
     assert sequence.step_results[1].verdict == Verdict.PASSED
     assert sequence.step_results[2].verdict == Verdict.PASSED
@@ -246,6 +247,9 @@ def test_boolean_spec_mismatch():
 
     steps = [
         Step(1, "Step True", [BooleanSpec("ExpectedTrue", True), BooleanSpec("ExpectedFalse", False)]),
+        Step(2, "Foo"),
+        Step(3, "Bar"),
+        Step(4, "Foobar"),
     ]
     sequence = TestSequenceBooleanSpecs(steps)
     with pytest.raises(SpecMismatch):
@@ -298,9 +302,25 @@ class TestSequenceNumericSpecs(Sequence):
         self.step(lambda: 0xFF)
         self.step(lambda: 0xFF)
         self.step(lambda: -1)
-        # shortcut to match number of configured steps below
-        for _ in range(19):
-            self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
 
 
 def test_numeric_spec_pass():
@@ -334,9 +354,10 @@ def test_numeric_spec_pass():
         Step(1440, "Step LEGE", [NumericSpec("Expect pass", NumericComparator.LEGE, -2, -1)]),
         Step(1460, "Step LEGE", [NumericSpec("Expect pass", NumericComparator.LEGE, -1, 0)]),
     ]
+    step_count = len(steps)
     sequence = TestSequenceNumericSpecs(steps)
     sequence.run()
-    assert len(sequence.step_results) == len(sequence.steps)
+    assert len(sequence.step_results) == step_count
     for r in sequence.step_results:
         print(r)
         assert r.verdict == Verdict.PASSED
@@ -346,9 +367,34 @@ class TestSequenceNumericSpecsFail(Sequence):
     __test__ = False
 
     def sequence(self):
-        # shortcut to match number of configured steps below
-        for _ in range(28):
-            self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
+        self.step(lambda: 0)
 
 
 def test_numeric_spec_fail():
@@ -382,9 +428,10 @@ def test_numeric_spec_fail():
         Step(1360, "Step LEGT", [NumericSpec("Expect fail", NumericComparator.LEGT, -1, 1)]),
         Step(1400, "Step LEGE", [NumericSpec("Expect fail", NumericComparator.LEGE, -1, 1)]),
     ]
+    step_count = len(steps)
     sequence = TestSequenceNumericSpecsFail(steps)
     sequence.run()
-    assert len(sequence.step_results) == len(sequence.steps)
+    assert len(sequence.step_results) == step_count
     for r in sequence.step_results:
         print(r)
         assert r.verdict == Verdict.FAILED
@@ -426,7 +473,7 @@ def test_numeric_spec_mismatch():
             ],
         ),
     ]
-    sequence = TestSequenceBooleanSpecs(steps)
+    sequence = TestSequenceNumericSpecMismatch(steps)
     with pytest.raises(SpecMismatch):
         sequence.run()
 
