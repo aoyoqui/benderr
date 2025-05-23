@@ -1,26 +1,30 @@
-import pytest
 from dataclasses import dataclass
-from pydantic.dataclasses import dataclass as pddataclass
 
+import pytest
 from br_tester.sequence import Sequence
 from br_tester.sequence_check import extract_steps_with_return
+from pydantic.dataclasses import dataclass as pddataclass
 
 
 @dataclass
 class CustomDataClass:
     pass
 
+
 class CustomClass:
     pass
+
 
 @pddataclass
 class CustomPydanticDataClass:
     pass
 
+
 class TestSequence(Sequence):
     __test__ = False
+
     def sequence(self):
-        self.step(lambda : True)
+        self.step(lambda: True)
         self.step(self.return_unknown)
         self.step(self.return_boolean)
         self.step(self.return_string)
@@ -39,14 +43,14 @@ class TestSequence(Sequence):
         return True
 
     def return_boolean(self) -> bool:
-        return False    
+        return False
 
     def return_string(self) -> str:
         return "foo"
-    
+
     def return_number(self) -> float:
         return 1.0
-    
+
     def return_none_but_type_number(self) -> int:
         pass
 
@@ -55,13 +59,13 @@ class TestSequence(Sequence):
 
     def return_class(self) -> CustomClass:
         return CustomClass()
-    
+
     def return_pydantic_dataclass(self) -> CustomPydanticDataClass:
         return CustomPydanticDataClass()
-    
+
     def return_integer(self) -> int:
         return 2
-    
+
     def return_none_with_argument(self, _):
         pass
 
@@ -70,6 +74,7 @@ class TestSequence(Sequence):
 
     def return_annotated_tuple(self) -> tuple[int, int]:
         return 1, True
+
 
 def test_sequence_check():
     steps = extract_steps_with_return(TestSequence)
@@ -102,6 +107,7 @@ def test_sequence_check():
     assert steps[12][0] == "return_annotated_tuple"
     assert steps[12][1] == "tuple[int, int]"
     assert steps[13][0] == "New name"
+
 
 if __name__ == "__main__":
     pytest.main(["-v"])

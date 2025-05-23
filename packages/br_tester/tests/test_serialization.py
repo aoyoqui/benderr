@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from br_tester.br_types import BooleanSpec
+from br_tester.br_types import BooleanSpec, NumericComparator, NumericSpec
 from br_tester.configurator import steps_from_file
 
 
@@ -21,6 +21,17 @@ def test_boolean_steps():
     assert steps[0].name == "Power-Up Check"
     assert steps[1].name == "Safety State Verification"
     assert steps[2].name == "System Ready Confirmation"
+
+
+def test_numeric_spec_validation():
+    with pytest.raises(ValueError):
+        NumericSpec("foo", NumericComparator.EQ, 0, -1)
+    with pytest.raises(ValueError):
+        NumericSpec("foo", NumericComparator.GTLT, 0, -1)
+    with pytest.raises(ValueError):
+        NumericSpec("foo", NumericComparator.GT, None, -1)
+    with pytest.raises(ValueError):
+        NumericSpec("foo", NumericComparator.LT, 0)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,10 @@
+import ast
+import inspect
 import numbers
+import textwrap
 from abc import ABC, abstractmethod
 from datetime import datetime
-import inspect, ast, textwrap, numbers
-from typing import get_type_hints, get_origin
+from typing import get_origin, get_type_hints
 
 from br_tester.br_types import (
     BooleanSpec,
@@ -17,11 +19,14 @@ from br_tester.br_types import (
 )
 from br_tester.events import step_ended, step_started
 
+
 class Sequence(ABC):
     def __init__(self, steps: list[Step]):
         step_names_return = self.declared_steps_with_return()
         if len(step_names_return) != len(steps):
-            raise StepCountError(f"Executable steps count ({len(step_names_return)}) do not match configured steps count({len(steps)}!)")
+            raise StepCountError(
+                f"Executable steps count ({len(step_names_return)}) do not match configured steps count({len(steps)}!)"
+            )
         self.steps = steps
         self.step_results = []
 
@@ -80,63 +85,75 @@ class Sequence(ABC):
             pass
         return step_result
 
-    def _test_boolean(self, result, specs, step_result: StepResult):
+    @staticmethod
+    def _test_boolean(result, specs, step_result: StepResult):
         if len(specs) > 1:
             raise SpecMismatch(
                 f"Result is a single boolean but more than one spec for this result has been defined: {specs}"
             )
         spec = specs[0]
         if isinstance(spec, BooleanSpec):
-            passed = (spec.pass_if_true and result) or (not spec.pass_if_true and not result)
+            passed = Sequence._boolean_spec_passes(result, spec)
             step_result.verdict = Verdict.PASSED if passed else Verdict.FAILED
             step_result.results.append(Measurement(result, passed, spec))
         else:
             raise SpecMismatch(f"Result is a single boolean but spec does not define a boolean check: {spec}")
         return step_result
 
-    def _test_numeric(self, result, specs, step_result: StepResult):
+    @staticmethod
+    def _boolean_spec_passes(result: bool, spec: BooleanSpec):
+        return (spec.pass_if_true and result) or (not spec.pass_if_true and not result)
+
+    @staticmethod
+    def _test_numeric(result, specs, step_result: StepResult):
         if len(specs) > 1:
             raise SpecMismatch(
                 f"Result is a single number but more than one spec for this result has been defined: {specs}"
             )
         spec = specs[0]
         if isinstance(spec, NumericSpec):
-            match spec.comparator:
-                case NumericComparator.GT:
-                    passed = result > spec.lower
-                case NumericComparator.GE:
-                    passed = result >= spec.lower
-                case NumericComparator.LT:
-                    passed = result < spec.upper
-                case NumericComparator.LE:
-                    passed = result <= spec.upper
-                case NumericComparator.EQ:
-                    passed = result == spec.lower
-                case NumericComparator.NEQ:
-                    passed = result != spec.lower
-                case NumericComparator.GTLT:
-                    passed = spec.lower < result < spec.upper
-                case NumericComparator.GELT:
-                    passed = spec.lower <= result < spec.upper
-                case NumericComparator.GTLE:
-                    passed = spec.lower < result <= spec.upper
-                case NumericComparator.GELE:
-                    passed = spec.lower <= result <= spec.upper
-                case NumericComparator.LTGT:
-                    passed = spec.lower > result or result > spec.upper
-                case NumericComparator.LTGE:
-                    passed = spec.lower > result or result >= spec.upper
-                case NumericComparator.LEGT:
-                    passed = spec.lower >= result or result > spec.upper
-                case NumericComparator.LEGE:
-                    passed = spec.lower >= result or result >= spec.upper
-
+            passed = Sequence._numeric_test_passes(result, spec)
             step_result.verdict = Verdict.PASSED if passed else Verdict.FAILED
             step_result.results.append(Measurement(result, passed, spec))
         else:
             raise SpecMismatch(f"Result is a single number but spec does not define a numeric test: {spec}")
         return step_result
-    
+
+    @staticmethod
+    def _numeric_test_passes(result: numbers.Number, spec: NumericSpec):
+        match spec.comparator:
+            case NumericComparator.GT:
+                passed = result > spec.lower
+            case NumericComparator.GE:
+                passed = result >= spec.lower
+            case NumericComparator.LT:
+                passed = result < spec.upper
+            case NumericComparator.LE:
+                passed = result <= spec.upper
+            case NumericComparator.EQ:
+                passed = result == spec.lower
+            case NumericComparator.NEQ:
+                passed = result != spec.lower
+            case NumericComparator.GTLT:
+                passed = spec.lower < result < spec.upper
+            case NumericComparator.GELT:
+                passed = spec.lower <= result < spec.upper
+            case NumericComparator.GTLE:
+                passed = spec.lower < result <= spec.upper
+            case NumericComparator.GELE:
+                passed = spec.lower <= result <= spec.upper
+            case NumericComparator.LTGT:
+                passed = spec.lower > result or result > spec.upper
+            case NumericComparator.LTGE:
+                passed = spec.lower > result or result >= spec.upper
+            case NumericComparator.LEGT:
+                passed = spec.lower >= result or result > spec.upper
+            case NumericComparator.LEGE:
+                passed = spec.lower >= result or result >= spec.upper
+            case _:
+                raise ValueError(f"{spec.comparator} not handled")
+        return passed
+
     @classmethod
     def declared_steps_with_return(cls) -> list[tuple[str, str]]:
         """
@@ -149,7 +166,8 @@ class Sequence(ABC):
         tree = ast.parse(source)
 
         # collect all step(...) calls
-        calls: list[tuple[str|None, ast.expr|None]] = []
+        calls: list[tuple[str | None, ast.expr | None]] = []
+
         class V(ast.NodeVisitor):
             def visit_Call(self, node: ast.Call):
                 if (
@@ -159,9 +177,12 @@ class Sequence(ABC):
                     and node.func.attr == "step"
                 ):
                     custom = next(
-                        (kw.value.value for kw in node.keywords
-                         if kw.arg=="name" and isinstance(kw.value, ast.Constant)),
-                        None
+                        (
+                            kw.value.value
+                            for kw in node.keywords
+                            if kw.arg == "name" and isinstance(kw.value, ast.Constant)
+                        ),
+                        None,
                     )
                     pos = node.args[0] if node.args else None
                     calls.append((custom, pos))
@@ -194,24 +215,18 @@ class Sequence(ABC):
                 body = pos.body
                 if isinstance(body, ast.Constant) and isinstance(body.value, bool):
                     ret_type = "bool"
-                elif (
-                    (isinstance(body, ast.Constant) and is_numeric_val(body.value))
-                    or
-                    (isinstance(body, ast.UnaryOp)
-                     and isinstance(body.op, ast.USub)
-                     and isinstance(body.operand, ast.Constant)
-                     and is_numeric_val(body.operand.value))
+                elif (isinstance(body, ast.Constant) and is_numeric_val(body.value)) or (
+                    isinstance(body, ast.UnaryOp)
+                    and isinstance(body.op, ast.USub)
+                    and isinstance(body.operand, ast.Constant)
+                    and is_numeric_val(body.operand.value)
                 ):
                     ret_type = "numeric"
                 elif isinstance(body, ast.Constant) and isinstance(body.value, str):
                     ret_type = "str"
             else:
                 # Named method — use annotations
-                fn_name = (
-                    pos.attr if isinstance(pos, ast.Attribute)
-                    else pos.id if isinstance(pos, ast.Name)
-                    else None
-                )
+                fn_name = pos.attr if isinstance(pos, ast.Attribute) else pos.id if isinstance(pos, ast.Name) else None
                 if fn_name:
                     fn = getattr(cls, fn_name, None)
                     if fn:
@@ -234,4 +249,3 @@ class Sequence(ABC):
             results.append((name, ret_type))
 
         return results
-

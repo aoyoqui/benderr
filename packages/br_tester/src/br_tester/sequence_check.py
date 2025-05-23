@@ -1,12 +1,11 @@
-import inspect
 import ast
+import inspect
+import numbers
 import textwrap
 from typing import List, Type, get_args, get_origin
-import numbers
 
-def extract_steps_with_return(
-    seq_cls: Type
-) -> List[tuple[str, str]]:
+
+def extract_steps_with_return(seq_cls: Type) -> List[tuple[str, str]]:
     """
     Pull out every self.step(...) in seq_cls.sequence(), returning
     (step_name, return_type) with return_type in {"bool","numeric","str","none"}.
@@ -16,7 +15,8 @@ def extract_steps_with_return(
     source = textwrap.dedent(source)
     tree = ast.parse(source)
 
-    calls: List[tuple[str|None, ast.expr|None]] = []
+    calls: List[tuple[str | None, ast.expr | None]] = []
+
     class Visitor(ast.NodeVisitor):
         def visit_Call(self, node: ast.Call):
             if (

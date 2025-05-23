@@ -9,6 +9,7 @@ from br_tester.br_types import (
     SpecMismatch,
     Step,
     StepCountError,
+    StepResult,
     Verdict,
 )
 from br_tester.sequence import Sequence
@@ -176,6 +177,17 @@ def test_pass_no_specs():
         assert r.verdict == Verdict.PASSED
 
 
+def test_boolean_spec_check():
+    result = Sequence._boolean_spec_passes(False, BooleanSpec("ExpectedFalse", pass_if_true=False))
+    assert isinstance(result, bool) and result
+    result = Sequence._boolean_spec_passes(True, BooleanSpec("ExpectedTrue", pass_if_true=True))
+    assert isinstance(result, bool) and result
+    result = Sequence._boolean_spec_passes(False, BooleanSpec("ExpectedTrue", pass_if_true=True))
+    assert isinstance(result, bool) and not result
+    result = Sequence._boolean_spec_passes(True, BooleanSpec("ExpectedFalse", pass_if_true=False))
+    assert isinstance(result, bool) and not result
+
+
 class TestSequenceBooleanSpecs(Sequence):
     __test__ = False
 
@@ -186,22 +198,7 @@ class TestSequenceBooleanSpecs(Sequence):
         self.step(lambda: True)
 
 
-def test_boolean_spec_pass():
-    steps = [
-        Step(1, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
-        Step(2, "Step True", [BooleanSpec("ExpectedTrue", pass_if_true=True)]),
-        Step(1, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
-        Step(2, "Step True", [BooleanSpec("ExpectedTrue", pass_if_true=True)]),
-    ]
-    step_count = len(steps)
-    sequence = TestSequenceBooleanSpecs(steps)
-    sequence.run()
-    assert len(sequence.step_results) == step_count
-    for r in sequence.step_results:
-        assert r.verdict == Verdict.PASSED
-
-
-def test_boolean_spec_fail():
+def test_boolean_steps():
     steps = [
         Step(1, "Step True", [BooleanSpec("ExpectedTrue", pass_if_true=True)]),
         Step(2, "Step True", [BooleanSpec("ExpectedTrue", pass_if_true=True)]),
@@ -230,30 +227,16 @@ def test_boolean_spec_fail():
     assert not sequence.step_results[3].results[0].passed
 
 
-class TestSequenceBooleanSpecMismatch(Sequence):
-    __test__ = False
-
-    def sequence(self):
-        self.step(lambda: False)
-
-
 def test_boolean_spec_mismatch():
-    steps = [
-        Step(1, "Step True", [NumericSpec("voltage", NumericComparator.GTLT, 0, 10, "V")]),
-    ]
-    sequence = TestSequenceBooleanSpecMismatch(steps)
     with pytest.raises(SpecMismatch):
-        sequence.run()
+        Sequence._test_boolean(
+            True, [NumericSpec("voltage", NumericComparator.GTLT, 0, 10, "V")], StepResult(0, "foo")
+        )
 
-    steps = [
-        Step(1, "Step True", [BooleanSpec("ExpectedTrue", True), BooleanSpec("ExpectedFalse", False)]),
-        Step(2, "Foo"),
-        Step(3, "Bar"),
-        Step(4, "Foobar"),
-    ]
-    sequence = TestSequenceBooleanSpecs(steps)
     with pytest.raises(SpecMismatch):
-        sequence.run()
+        Sequence._test_boolean(
+            True, [BooleanSpec("ExpectedTrue", True), BooleanSpec("ExpectedFalse", False)], StepResult(0, "foo")
+        )
 
 
 def delay_10ms():
@@ -289,152 +272,159 @@ def test_sequence_start_end_time():
     assert sequence.step_results[1].start_time < sequence.step_results[1].end_time
 
 
+def test_numeric_spec_pass():
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.GT, -1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(1, NumericSpec("Expect pass", NumericComparator.GE, 0))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(1, NumericSpec("Expect pass", NumericComparator.GE, 1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(1e2, NumericSpec("Expect pass", NumericComparator.LT, None, 100.1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0b101, NumericSpec("Expect pass", NumericComparator.LE, None, 5))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0b101, NumericSpec("Expect pass", NumericComparator.LE, None, 5.1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0xFF, NumericSpec("Expect pass", NumericComparator.EQ, 255))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0xFF, NumericSpec("Expect pass", NumericComparator.NEQ, 254))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.GTLT, -2, 2))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.GELT, -1, 1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.GELT, 0, 1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.GTLE, -1, 0))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.GTLE, -1, 1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.GELE, -1, 1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.GELE, 0, 1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.GELE, -1, 0))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LTGT, 1, 2))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LTGT, -2, -1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LTGE, 1, 2))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LTGE, -1, 0))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LTGE, -2, -1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LEGT, 1, 2))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LEGT, 0, 1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LEGT, -2, -1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LEGE, 0, 1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LEGE, 1, 2))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LEGE, -2, -1))
+    assert isinstance(result, bool) and result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect pass", NumericComparator.LEGE, -1, 0))
+    assert isinstance(result, bool) and result
+
+
+def test_numeric_spec_fail():
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GT, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GT, 0))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GE, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LT, None, -1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LT, None, 0))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LE, None, -1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.EQ, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GTLT, 1, 2))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GTLT, 0, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GTLT, -1, 0))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GTLT, -2, -1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GELT, 1, 2))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GELT, -1, 0))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GELT, -2, -1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GTLE, -2, -1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GTLE, 0, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GTLE, 1, 2))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GELE, -2, -1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.GELE, 1, 2))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LTGT, -1, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LTGT, 0, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LTGT, -1, 0))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LTGE, 0, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LTGE, -1, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LEGT, -1, 0))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LEGT, -1, 1))
+    assert isinstance(result, bool) and not result
+    result = Sequence._numeric_test_passes(0, NumericSpec("Expect fail", NumericComparator.LEGE, -1, 1))
+    assert isinstance(result, bool) and not result
+
+
 class TestSequenceNumericSpecs(Sequence):
     __test__ = False
 
     def sequence(self):
-        self.step(lambda: 0)
-        self.step(lambda: 1)
-        self.step(lambda: 1)
-        self.step(lambda: 1e2)  # Testing here also different numerical formats
-        self.step(lambda: 0b101)
-        self.step(lambda: 0b101)
+        self.step(lambda: 1.0)
         self.step(lambda: 0xFF)
-        self.step(lambda: 0xFF)
-        self.step(lambda: -1)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
+        self.step(lambda: -2)
         self.step(lambda: 0)
 
 
-def test_numeric_spec_pass():
+def test_numeric_steps():
     steps = [
-        Step(100, "Step GT", [NumericSpec("Expect pass", NumericComparator.GT, -1)]),
-        Step(200, "Step GE", [NumericSpec("Expect pass", NumericComparator.GE, 0)]),
-        Step(250, "Step GE", [NumericSpec("Expect pass", NumericComparator.GE, 1)]),
-        Step(300, "Step LT", [NumericSpec("Expect pass", NumericComparator.LT, None, 100.1)]),
-        Step(400, "Step LE", [NumericSpec("Expect pass", NumericComparator.LE, None, 5)]),
-        Step(450, "Step LE", [NumericSpec("Expect pass", NumericComparator.LE, None, 5.1)]),
-        Step(500, "Step EQ", [NumericSpec("Expect pass", NumericComparator.EQ, 255)]),
-        Step(600, "Step NEQ", [NumericSpec("Expect pass", NumericComparator.NEQ, 254)]),
-        Step(700, "Step GTLT", [NumericSpec("Expect pass", NumericComparator.GTLT, -2, 0)]),
-        Step(800, "Step GELT", [NumericSpec("Expect pass", NumericComparator.GELT, -1, 1)]),
-        Step(850, "Step GELT", [NumericSpec("Expect pass", NumericComparator.GELT, 0, 1)]),
-        Step(900, "Step GTLE", [NumericSpec("Expect pass", NumericComparator.GTLE, -1, 0)]),
-        Step(950, "Step GTLE", [NumericSpec("Expect pass", NumericComparator.GTLE, -1, 1)]),
-        Step(1000, "Step GELE", [NumericSpec("Expect pass", NumericComparator.GELE, -1, 1)]),
-        Step(1050, "Step GELE", [NumericSpec("Expect pass", NumericComparator.GELE, 0, 1)]),
-        Step(1060, "Step GELE", [NumericSpec("Expect pass", NumericComparator.GELE, -1, 0)]),
-        Step(1100, "Step LTGT", [NumericSpec("Expect pass", NumericComparator.LTGT, 1, 2)]),
-        Step(1150, "Step LTGT", [NumericSpec("Expect pass", NumericComparator.LTGT, -2, -1)]),
-        Step(1200, "Step LTGE", [NumericSpec("Expect pass", NumericComparator.LTGE, 1, 2)]),
-        Step(1250, "Step LTGE", [NumericSpec("Expect pass", NumericComparator.LTGE, -1, 0)]),
-        Step(1260, "Step LTGE", [NumericSpec("Expect pass", NumericComparator.LTGE, -2, -1)]),
-        Step(1300, "Step LEGT", [NumericSpec("Expect pass", NumericComparator.LEGT, 1, 2)]),
-        Step(1350, "Step LEGT", [NumericSpec("Expect pass", NumericComparator.LEGT, 0, 1)]),
-        Step(1360, "Step LEGT", [NumericSpec("Expect pass", NumericComparator.LEGT, -2, -1)]),
-        Step(1400, "Step LEGE", [NumericSpec("Expect pass", NumericComparator.LEGE, 0, 1)]),
-        Step(1420, "Step LEGE", [NumericSpec("Expect pass", NumericComparator.LEGE, 1, 2)]),
-        Step(1440, "Step LEGE", [NumericSpec("Expect pass", NumericComparator.LEGE, -2, -1)]),
-        Step(1460, "Step LEGE", [NumericSpec("Expect pass", NumericComparator.LEGE, -1, 0)]),
+        Step(1, "Step GT", [NumericSpec("Expect pass", NumericComparator.GT, 0)]),
+        Step(2, "Step NEQ", [NumericSpec("Expect pass", NumericComparator.NEQ, 0)]),
+        Step(2, "Step GTLE", [NumericSpec("Expect fail", NumericComparator.GTLE, 0, 1)]),
+        Step(2, "Step LEGE", [NumericSpec("Expect fail", NumericComparator.LEGE, -2, 2)]),
     ]
     step_count = len(steps)
     sequence = TestSequenceNumericSpecs(steps)
     sequence.run()
     assert len(sequence.step_results) == step_count
-    for r in sequence.step_results:
-        print(r)
-        assert r.verdict == Verdict.PASSED
-
-
-class TestSequenceNumericSpecsFail(Sequence):
-    __test__ = False
-
-    def sequence(self):
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-        self.step(lambda: 0)
-
-
-def test_numeric_spec_fail():
-    steps = [
-        Step(100, "Step GT", [NumericSpec("Expect fail", NumericComparator.GT, 1)]),
-        Step(100, "Step GT", [NumericSpec("Expect fail", NumericComparator.GT, 0)]),
-        Step(200, "Step GE", [NumericSpec("Expect fail", NumericComparator.GE, 1)]),
-        Step(300, "Step LT", [NumericSpec("Expect fail", NumericComparator.LT, None, -1)]),
-        Step(300, "Step LT", [NumericSpec("Expect fail", NumericComparator.LT, None, 0)]),
-        Step(400, "Step LE", [NumericSpec("Expect fail", NumericComparator.LE, None, -1)]),
-        Step(500, "Step EQ", [NumericSpec("Expect fail", NumericComparator.EQ, 1)]),
-        Step(600, "Step NEQ", [NumericSpec("Expect fail", NumericComparator.NEQ, 0)]),
-        Step(700, "Step GTLT", [NumericSpec("Expect fail", NumericComparator.GTLT, 1, 2)]),
-        Step(700, "Step GTLT", [NumericSpec("Expect fail", NumericComparator.GTLT, 0, 1)]),
-        Step(700, "Step GTLT", [NumericSpec("Expect fail", NumericComparator.GTLT, -1, 0)]),
-        Step(700, "Step GTLT", [NumericSpec("Expect fail", NumericComparator.GTLT, -2, -1)]),
-        Step(800, "Step GELT", [NumericSpec("Expect fail", NumericComparator.GELT, 1, 2)]),
-        Step(800, "Step GELT", [NumericSpec("Expect fail", NumericComparator.GELT, -1, 0)]),
-        Step(850, "Step GELT", [NumericSpec("Expect fail", NumericComparator.GELT, -2, -1)]),
-        Step(900, "Step GTLE", [NumericSpec("Expect fail", NumericComparator.GTLE, -2, -1)]),
-        Step(900, "Step GTLE", [NumericSpec("Expect fail", NumericComparator.GTLE, 0, 1)]),
-        Step(950, "Step GTLE", [NumericSpec("Expect fail", NumericComparator.GTLE, 1, 2)]),
-        Step(1000, "Step GELE", [NumericSpec("Expect fail", NumericComparator.GELE, -2, -1)]),
-        Step(1050, "Step GELE", [NumericSpec("Expect fail", NumericComparator.GELE, 1, 2)]),
-        Step(1100, "Step LTGT", [NumericSpec("Expect fail", NumericComparator.LTGT, -1, 1)]),
-        Step(1150, "Step LTGT", [NumericSpec("Expect fail", NumericComparator.LTGT, 0, 1)]),
-        Step(1150, "Step LTGT", [NumericSpec("Expect fail", NumericComparator.LTGT, -1, 0)]),
-        Step(1200, "Step LTGE", [NumericSpec("Expect fail", NumericComparator.LTGE, 0, 1)]),
-        Step(1250, "Step LTGE", [NumericSpec("Expect fail", NumericComparator.LTGE, -1, 1)]),
-        Step(1350, "Step LEGT", [NumericSpec("Expect fail", NumericComparator.LEGT, -1, 0)]),
-        Step(1360, "Step LEGT", [NumericSpec("Expect fail", NumericComparator.LEGT, -1, 1)]),
-        Step(1400, "Step LEGE", [NumericSpec("Expect fail", NumericComparator.LEGE, -1, 1)]),
-    ]
-    step_count = len(steps)
-    sequence = TestSequenceNumericSpecsFail(steps)
-    sequence.run()
-    assert len(sequence.step_results) == step_count
-    for r in sequence.step_results:
-        print(r)
-        assert r.verdict == Verdict.FAILED
+    assert sequence.step_results[0].verdict == Verdict.PASSED
+    assert sequence.step_results[1].verdict == Verdict.PASSED
+    assert sequence.step_results[2].verdict == Verdict.FAILED
+    assert sequence.step_results[3].verdict == Verdict.FAILED
+    assert len(sequence.step_results[0].results) == 1
+    assert len(sequence.step_results[1].results) == 1
+    assert len(sequence.step_results[2].results) == 1
+    assert len(sequence.step_results[3].results) == 1
+    assert sequence.step_results[0].results[0].value == 1.0
+    assert sequence.step_results[1].results[0].value == 255
+    assert sequence.step_results[2].results[0].value == -2
+    assert sequence.step_results[3].results[0].value == 0
+    assert sequence.step_results[0].results[0].passed
+    assert sequence.step_results[1].results[0].passed
+    assert not sequence.step_results[2].results[0].passed
+    assert not sequence.step_results[3].results[0].passed
 
 
 class TestSequenceNumericSpecMismatch(Sequence):
@@ -444,38 +434,19 @@ class TestSequenceNumericSpecMismatch(Sequence):
         self.step(lambda: 3.14)
 
 
-def test_numeric_spec_validation():
-    with pytest.raises(ValueError):
-        NumericSpec("foo", NumericComparator.EQ, 0, -1)
-    with pytest.raises(ValueError):
-        NumericSpec("foo", NumericComparator.GTLT, 0, -1)
-    with pytest.raises(ValueError):
-        NumericSpec("foo", NumericComparator.GT, None, -1)
-    with pytest.raises(ValueError):
-        NumericSpec("foo", NumericComparator.LT, 0)
-
-
 def test_numeric_spec_mismatch():
-    steps = [
-        Step(1, "Step True", [BooleanSpec("Foo", True)]),
-    ]
-    sequence = TestSequenceNumericSpecMismatch(steps)
     with pytest.raises(SpecMismatch):
-        sequence.run()
+        Sequence._test_numeric(1, [BooleanSpec("Foo", True)], StepResult(0, "foo"))
 
-    steps = [
-        Step(
+    with pytest.raises(SpecMismatch):
+        Sequence._test_numeric(
             1,
-            "Step Numeric",
             [
                 NumericSpec("Expect fail", NumericComparator.LEGT, -1, 1),
                 NumericSpec("Expect fail", NumericComparator.LEGT, -1, 1),
             ],
-        ),
-    ]
-    sequence = TestSequenceNumericSpecMismatch(steps)
-    with pytest.raises(SpecMismatch):
-        sequence.run()
+            StepResult(0, "foo"),
+        )
 
 
 if __name__ == "__main__":
