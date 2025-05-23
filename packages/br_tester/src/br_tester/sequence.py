@@ -4,7 +4,7 @@ import numbers
 import textwrap
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import get_origin, get_type_hints
+from typing import get_origin, get_type_hints, get_args
 
 from br_tester.br_types import (
     BooleanSpec,
@@ -204,12 +204,12 @@ class Sequence(ABC):
             elif isinstance(pos, ast.Name):
                 name = pos.id
             elif isinstance(pos, ast.Lambda):
-                name = "<lambda>"
+                name = "lambda"
             else:
-                name = "<unknown>"
+                name = "none"
 
             # 2) return-type
-            ret_type = "unknown"
+            ret_type = "none"
             # Lambda literal inference
             if isinstance(pos, ast.Lambda):
                 body = pos.body
@@ -233,18 +233,21 @@ class Sequence(ABC):
                         hints = get_type_hints(fn, include_extras=False)
                         ann = hints.get("return", None)
 
-                        # generics?
                         origin = get_origin(ann) or ann
-
-                        if ann is bool:
+                        if origin is tuple:
+                            args = get_args(ann)
+                            if args:
+                                ret_type = f"tuple[{', '.join(a.__name__ for a in args)}]"
+                            else:
+                                ret_type = "tuple"
+                        elif ann is bool:
                             ret_type = "bool"
-                        elif isinstance(origin, type) and issubclass(origin, numbers.Number):
+                        elif ann and issubclass(ann, numbers.Number):
                             ret_type = "numeric"
                         elif ann is str:
                             ret_type = "str"
-                        elif isinstance(origin, type):
-                            # any other class (including dataclasses/Pydantic)
-                            ret_type = origin.__name__
+                        elif isinstance(ann, type):
+                            ret_type = ann.__name__
 
             results.append((name, ret_type))
 

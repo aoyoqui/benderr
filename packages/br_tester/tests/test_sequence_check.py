@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 import pytest
 from br_tester.sequence import Sequence
-from br_tester.sequence_check import extract_steps_with_return
 from pydantic.dataclasses import dataclass as pddataclass
 
 
@@ -77,7 +76,7 @@ class TestSequence(Sequence):
 
 
 def test_sequence_check():
-    steps = extract_steps_with_return(TestSequence)
+    steps = TestSequence.declared_steps_with_return()
     print(steps)
     assert len(steps) == 14
     assert steps[0][0] == "lambda"
