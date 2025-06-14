@@ -1,0 +1,17 @@
+[tool.uv]
+package = true
+
+[project]
+name = "br_gui"
+version = "0.1.0"
+dependencies = [
+    "pyside6>=6.9.0",
+]
+
+[project.scripts]
+br_gui = "views.main_window:main"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]

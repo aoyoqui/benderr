@@ -15,12 +15,14 @@ dev = [
 members = [
   "packages/br_tester",
   "packages/br_cli",
+  "packages/br_gui",
   "packages/demos",
 ]
 
 [tool.uv.sources]
 br_tester = { workspace = true }
 br_cli = { workspace = true }
+br_gui = { workspace = true }
 demos = { workspace = true }
 
 [tool.ruff]
@@ -32,6 +34,7 @@ target-version = "py312"
 pythonpath = [
   "packages/br_tester/src",
   "packages/br_cli/src",
+  "packages/br_gui/src",
   "packages/demos/src"
 ]
 
