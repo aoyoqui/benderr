@@ -2,7 +2,7 @@ import argparse
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from br_tester.br_types import Measurement, StepResult, Verdict
+from br_tester.br_types import Measurement, StepResult, Verdict, Step
 from br_tester.configurator import steps_from_file
 from br_tester.events import step_ended, step_started
 from rich.console import Console
@@ -11,7 +11,7 @@ from rich.table import Table
 console = Console()
 
 
-def handle_step_started(sender, step):
+def handle_step_started(sender, step: Step):
     console.rule(f"[bold blue]🟡 Step Start: {step.name}")
 
 
