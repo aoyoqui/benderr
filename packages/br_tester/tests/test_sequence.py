@@ -13,7 +13,11 @@ from br_tester.br_types import (
     Verdict,
 )
 from br_tester.sequence import Sequence
+from br_tester.config import AppConfig
+from br_tester.br_logging import setup_logger
 
+AppConfig.load(profile="ci", config_dirs=["./config"])
+setup_logger()
 
 def step_1():
     print("This is step 1")

@@ -19,24 +19,29 @@ from br_tester.br_types import (
     StepCountError,
     StepResult,
     Verdict,
-    StepsConfigError
+    StepsConfigError,
+    SequenceResult
 )
 from br_tester.events import step_ended, step_started
 from br_tester.config import AppConfig
-
+from br_tester.report import ReportFormatter
 
 class Sequence(ABC):
-    def __init__(self, steps: list[Step]):
+    def __init__(self, steps: list[Step], report_formatter: ReportFormatter=None):
         self.logger = logging.getLogger("benderr")
+        self.report_formatter = report_formatter
         self.validate_steps(steps)
         self.steps = steps
         self.step_results = []
 
     def run(self):
+        self.start_time = datetime.now()
         if AppConfig.get("log_to_file", False):
             self._log_path = self._reset_log_file()
         """Call run to execute a sequence. Do not call sequence directly"""
         self.sequence()
+        if AppConfig.get("report_enabled", False) and self.report_formatter:
+            self._write_report()
 
     @abstractmethod
     def sequence(self):
@@ -78,14 +83,29 @@ class Sequence(ABC):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_dir = Path(AppConfig.get("output_dir", tempfile.gettempdir()))
         log_dir.mkdir(parents=True, exist_ok=True)
-        log_path = log_dir / f"run_{timestamp}.log"
+        log_path = log_dir / f"{timestamp}_run.log"
 
         fh = logging.FileHandler(log_path)
-        fh.setLevel(AppConfig.get("log_level_file", logging.INFO))
+        fh.setLevel(AppConfig.get("log_level_file", logging.DEBUG))
         fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logger.addHandler(fh)
 
         return log_path
+
+    def _write_report(self):
+        verdict = Verdict.PASSED
+        for step in self.step_results:
+            if step.verdict != Verdict.PASSED:
+                verdict = step.verdict
+                break
+        log_file = str(self._log_path) if self._log_path else ""
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d_%H%M%S")
+        filename = timestamp + "_report" + self.report_formatter.ext
+        report_path = Path(AppConfig.get("output_dir")) / filename
+        report = SequenceResult(self.start_time, now, log_file, verdict, self.step_results)
+        with open(report_path, "w") as f:
+            f.write(self.report_formatter.format(report))
 
 
     def _execute(f, *args, **kwargs):

@@ -9,6 +9,7 @@ from views.ribbon import TabbedRibbonContainer, RunSequenceRibbonPage, RibbonPag
 from core.event_bridge import EventBridge
 from br_tester.parse_steps import steps_from_file
 from br_tester.config import AppConfig
+from br_tester.br_logging import setup_logger
 
 
 class Worker(QObject):
@@ -75,7 +76,7 @@ class MainWindow(QMainWindow):
 
 def main():
     AppConfig.load(profile="gui", config_dirs=["./config"])
-    
+    setup_logger()
     app = QApplication(sys.argv)
     main_window = MainWindow()
     main_window.showMaximized()

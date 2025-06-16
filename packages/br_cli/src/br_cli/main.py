@@ -7,6 +7,7 @@ from br_tester.parse_steps import steps_from_file
 from br_tester.events import step_ended, step_started
 from br_tester.config import AppConfig
 from br_tester.br_logging import setup_logger
+from br_tester.report_json import JsonReportFormatter
 from rich.console import Console
 from rich.table import Table
 
@@ -85,7 +86,7 @@ def main():
     step_ended.connect(handle_step_ended)
 
     SequenceClass = get_sequence(args.sequence)
-    sequence = SequenceClass(steps)
+    sequence = SequenceClass(steps, JsonReportFormatter())
     sequence.run()
 
 

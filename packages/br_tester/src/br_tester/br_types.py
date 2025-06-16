@@ -126,6 +126,15 @@ class StepResult:
     results: list[Measurement] = field(default_factory=list)
 
 
+@dataclass
+class SequenceResult:
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    log_file: str | None = None
+    verdict: Verdict = Verdict.UNDEFINED
+    step_results: list[StepResult] = field(default_factory=list)
+    
+
 class StepCountError(Exception):
     pass
 
