@@ -2,7 +2,9 @@ import ast
 import inspect
 import numbers
 import textwrap
+import tempfile
 import logging
+from pathlib import Path
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import get_origin, get_type_hints, get_args
@@ -20,6 +22,7 @@ from br_tester.br_types import (
     StepsConfigError
 )
 from br_tester.events import step_ended, step_started
+from br_tester.config import AppConfig
 
 
 class Sequence(ABC):
@@ -30,6 +33,8 @@ class Sequence(ABC):
         self.step_results = []
 
     def run(self):
+        if AppConfig.get("log_to_file", False):
+            self._log_path = self._reset_log_file()
         """Call run to execute a sequence. Do not call sequence directly"""
         self.sequence()
 
@@ -43,11 +48,10 @@ class Sequence(ABC):
 
     def step(self, f, *args, **kwargs):
         config_step = self.steps.pop(0)
+        step_started.send(self, step=config_step)
         self.logger.info(f"Start step: {config_step.name}")
         self.logger.info(f"Step config/specs: {config_step}")
-        step_started.send(self, step=config_step)
         step_result = StepResult(config_step.id, config_step.name, datetime.now())
-        self.logger.info(f"Result from step {config_step.name}: {step_result}")
         try:
             kwargs.pop('step_name', None)
             result = Sequence._execute(f, *args, **kwargs)
@@ -58,10 +62,31 @@ class Sequence(ABC):
             raise
         finally:
             step_result.end_time = datetime.now()
+            self.logger.info(f"Result from step {config_step.name}: {step_result}")
             self.logger.info(f"End step: {config_step.name}")
             self.step_results.append(step_result)
             step_ended.send(self, result=step_result)
         return result
+
+    def _reset_log_file(self):
+        logger = logging.getLogger("myapp")
+        for h in logger.handlers[:]:
+            if isinstance(h, logging.FileHandler):
+                logger.removeHandler(h)
+                h.close()
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_dir = Path(AppConfig.get("output_dir", tempfile.gettempdir()))
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / f"run_{timestamp}.log"
+
+        fh = logging.FileHandler(log_path)
+        fh.setLevel(AppConfig.get("log_level_file", logging.INFO))
+        fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        logger.addHandler(fh)
+
+        return log_path
+
 
     def _execute(f, *args, **kwargs):
         if args is not None or kwargs is not None:

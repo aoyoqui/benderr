@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from br_tester.br_types import BooleanSpec, NumericComparator, NumericSpec
-from br_tester.configurator import steps_from_file
+from br_tester.parse_steps import steps_from_file
 
 
 def get_file_path(filename):

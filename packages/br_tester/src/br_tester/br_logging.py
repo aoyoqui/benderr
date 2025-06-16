@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 
+from br_tester.config import AppConfig
+
 def setup_logger():
     logger = logging.getLogger("benderr")
     logger.setLevel(logging.DEBUG)
@@ -11,9 +13,9 @@ def setup_logger():
 
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-    if True:
+    if AppConfig.get("log_to_console", True):
         ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
+        ch.setLevel(AppConfig.get("log_level_console", logging.INFO))
         ch.setFormatter(formatter)
         logger.addHandler(ch)
 

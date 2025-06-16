@@ -7,7 +7,7 @@ from PySide6.QtCore import QThread, Slot, QObject, Qt
 from views.step_widget import StepWidget
 from views.ribbon import TabbedRibbonContainer, RunSequenceRibbonPage, RibbonPage
 from core.event_bridge import EventBridge
-from br_tester.configurator import steps_from_file
+from br_tester.parse_steps import steps_from_file
 
 
 class Worker(QObject):

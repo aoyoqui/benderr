@@ -1,0 +1,6 @@
+log_level_console: DEBUG
+log_level_file: DEBUG
+log_to_console: true
+log_to_file: true
+output_dir: /tmp/
+report_enabled: true
