@@ -8,6 +8,7 @@ from views.step_widget import StepWidget
 from views.ribbon import TabbedRibbonContainer, RunSequenceRibbonPage, RibbonPage
 from core.event_bridge import EventBridge
 from br_tester.parse_steps import steps_from_file
+from br_tester.config import AppConfig
 
 
 class Worker(QObject):
@@ -73,6 +74,8 @@ class MainWindow(QMainWindow):
         self._thread.start()
 
 def main():
+    AppConfig.load(profile="gui", config_dirs=["./config"])
+    
     app = QApplication(sys.argv)
     main_window = MainWindow()
     main_window.showMaximized()
