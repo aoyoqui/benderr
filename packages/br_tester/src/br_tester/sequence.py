@@ -2,6 +2,7 @@ import ast
 import inspect
 import numbers
 import textwrap
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import get_origin, get_type_hints, get_args
@@ -23,6 +24,7 @@ from br_tester.events import step_ended, step_started
 
 class Sequence(ABC):
     def __init__(self, steps: list[Step]):
+        self.logger = logging.getLogger("benderr")
         self.validate_steps(steps)
         self.steps = steps
         self.step_results = []
@@ -41,17 +43,22 @@ class Sequence(ABC):
 
     def step(self, f, *args, **kwargs):
         config_step = self.steps.pop(0)
+        self.logger.info(f"Start step: {config_step.name}")
+        self.logger.info(f"Step config/specs: {config_step}")
         step_started.send(self, step=config_step)
         step_result = StepResult(config_step.id, config_step.name, datetime.now())
+        self.logger.info(f"Result from step {config_step.name}: {step_result}")
         try:
             kwargs.pop('step_name', None)
             result = Sequence._execute(f, *args, **kwargs)
             step_result = self._test(result, step_result, config_step.specs)
         except Exception:
+            self.logger.error(f"Unexpected error during sequence execution")
             step_result.verdict = Verdict.ABORTED
             raise
         finally:
             step_result.end_time = datetime.now()
+            self.logger.info(f"End step: {config_step.name}")
             self.step_results.append(step_result)
             step_ended.send(self, result=step_result)
         return result

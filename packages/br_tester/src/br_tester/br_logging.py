@@ -1,0 +1,39 @@
+import logging
+from datetime import datetime
+
+def setup_logger():
+    logger = logging.getLogger("benderr")
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = False
+
+    if logger.handlers:
+        return logger
+
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+    if True:
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+
+    return logger
+
+def get_log_path():
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    return f"run_{timestamp}.log"
+
+def reset_log_file():
+    logger = logging.getLogger("benderr")
+
+    for h in logger.handlers[:]:
+        if isinstance(h, logging.FileHandler):
+            logger.removeHandler(h)
+            h.close()
+
+    log_path = get_log_path()
+    file_handler = logging.FileHandler(log_path)
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(file_handler)
+    return log_path
