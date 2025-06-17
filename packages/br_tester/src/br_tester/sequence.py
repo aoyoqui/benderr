@@ -74,7 +74,7 @@ class Sequence(ABC):
         return result
 
     def _reset_log_file(self):
-        logger = logging.getLogger("myapp")
+        logger = logging.getLogger("benderr")
         for h in logger.handlers[:]:
             if isinstance(h, logging.FileHandler):
                 logger.removeHandler(h)

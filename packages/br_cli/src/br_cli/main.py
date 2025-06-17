@@ -4,7 +4,7 @@ from pathlib import Path
 
 from br_tester.br_types import Measurement, StepResult, Verdict, Step
 from br_tester.parse_steps import steps_from_file
-from br_tester.events import step_ended, step_started
+from br_tester.events import step_ended, step_started, log_msg
 from br_tester.config import AppConfig
 from br_tester.br_logging import setup_logger
 from br_tester.report_json import JsonReportFormatter

@@ -2,7 +2,7 @@ import sys
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QApplication, QToolBar
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QApplication, QToolBar, QDockWidget, QPlainTextEdit
 from PySide6.QtCore import QThread, Slot, QObject, Qt
 from views.step_widget import StepWidget
 from views.ribbon import TabbedRibbonContainer, RunSequenceRibbonPage, RibbonPage
@@ -51,10 +51,19 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         self.main_layout = QVBoxLayout(self.central_widget)
+
+        dock = QDockWidget("Log", self)
+        log_widget = QPlainTextEdit()
+        log_widget.setReadOnly(True)
+
         self.setLayout(self.main_layout)
 
         self.bridge = EventBridge()
 
+        self.bridge.qt_log_msg.connect(lambda log_msg: log_widget.appendPlainText(log_msg))
+        dock.setWidget(log_widget)
+        self.addDockWidget(Qt.BottomDockWidgetArea, dock)
+        
         self._thread: QThread | None = None
         self._worker: Worker | None = None
         

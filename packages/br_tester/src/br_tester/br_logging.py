@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from br_tester.config import AppConfig
+from br_tester.events import log_msg
 
 def setup_logger():
     logger = logging.getLogger("benderr")
@@ -18,6 +19,10 @@ def setup_logger():
         ch.setLevel(AppConfig.get("log_level_console", logging.INFO))
         ch.setFormatter(formatter)
         logger.addHandler(ch)
+
+    handler = SignalEmitterHandler()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     return logger
 
@@ -39,3 +44,8 @@ def reset_log_file():
     file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logger.addHandler(file_handler)
     return log_path
+
+class SignalEmitterHandler(logging.Handler):
+    def emit(self, record):
+        msg = self.format(record)
+        log_msg.send(self, log=msg, record=record)
