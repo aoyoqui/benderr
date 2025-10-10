@@ -1,8 +1,10 @@
 import time
 from pathlib import Path
 
+from br_tester.config import AppConfig
 from br_tester.parse_steps import steps_from_file
 from br_tester.sequence import Sequence
+from br_tester.br_logging import setup_logger
 
 
 class DemoSequence(Sequence):
@@ -24,11 +26,14 @@ class DemoSequence(Sequence):
 
     def step_3(self):
         time.sleep(1)
-        pass
+        self.logger.info("Step 3 executed")
 
 
 if __name__ == "__main__":
     json_path = Path(__file__).parent / "demo_steps.json"
     steps = steps_from_file(json_path)
+    AppConfig.load(profile="dev", config_dirs=["./config"])
+    setup_logger()
     sequence = DemoSequence(steps)
     sequence.run()
+
