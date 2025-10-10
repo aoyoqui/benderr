@@ -6,6 +6,7 @@ name = "br_gui"
 version = "0.1.0"
 dependencies = [
     "pyside6>=6.9.0",
+    "pyside6-qtads>=4.4.0",
 ]
 
 [project.scripts]

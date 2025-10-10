@@ -26,6 +26,7 @@ class RibbonButton(QToolButton):
         self.clicked.connect(lambda: print(f"I was clicked: {self.text()}"))
 
 class RibbonPage(QWidget):
+    button_clicked = Signal(str)
     def __init__(self, name: str, button_count: int = 4):
         super().__init__()
         self.name = name
@@ -35,6 +36,7 @@ class RibbonPage(QWidget):
 
         for i in range(1, button_count+1):
             btn = RibbonButton(f"{name} {i}")
+            btn.clicked.connect(lambda: self.button_clicked.emit("Instrument"))
             self._layout.addWidget(btn)
         self._layout.addStretch()
 
@@ -122,6 +124,7 @@ class RunSequenceRibbonPage(QWidget):
            
 
 class TabbedRibbonContainer(QWidget):
+    tab_ribbon_index_changed = Signal(int)
     def __init__(self, ribbon_pages):
         super().__init__()
 
@@ -142,6 +145,7 @@ class TabbedRibbonContainer(QWidget):
             self._pages.append(page)
 
         self._tabbar.currentChanged.connect(self._stack.setCurrentIndex)
+        self._tabbar.currentChanged.connect(lambda index: self.tab_ribbon_index_changed.emit(index))
         self._tabbar.setCurrentIndex(0)
 
         self._layout.addWidget(self._tabbar)
