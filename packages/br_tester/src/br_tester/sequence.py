@@ -1,13 +1,11 @@
-import ast
-import inspect
 import numbers
-import textwrap
 import tempfile
 import logging
 from pathlib import Path
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime
-from typing import get_origin, get_type_hints, get_args
+from functools import wraps
+from itertools import count
 
 from br_tester.br_types import (
     BooleanSpec,
@@ -27,51 +25,50 @@ from br_tester.config import AppConfig
 from br_tester.report import ReportFormatter
 
 class Sequence(ABC):
+    _step_order = count()
+
     def __init__(self, steps: list[Step], report_formatter: ReportFormatter=None):
         self.logger = logging.getLogger("benderr")
         self.report_formatter = report_formatter
-        self.validate_steps(steps)
-        self.steps = steps
+        self._log_path = None
+        self.steps = list(steps)
         self.step_results = []
+        self._registered_steps = self._collect_step_methods()
+        self.validate_steps(self.steps)
 
     def run(self):
         self.start_time = datetime.now()
+        self.step_results = []
+        self._config_index = 0
         if AppConfig.get("log_to_file", False):
             self._log_path = self._reset_log_file()
-        """Call run to execute a sequence. Do not call sequence directly"""
-        self.sequence()
+        else:
+            self._log_path = None
+        for step in self._registered_steps:
+            step["method"]()
         if AppConfig.get("report_enabled", False) and self.report_formatter:
             self._write_report()
 
-    @abstractmethod
-    def sequence(self):
-        """
-        Derive from this and implement the steps in this method, wrapping steps in the form:
-            self.step(f, arg1, arg2, arg3, kwarg1, kwarg2)
-        """
-        pass
+    @staticmethod
+    def step(step_name: str):
+        if not isinstance(step_name, str) or not step_name.strip():
+            raise ValueError("Step name must be a non-empty string")
 
-    def step(self, f, *args, **kwargs):
-        config_step = self.steps.pop(0)
-        step_started.send(self, step=config_step)
-        self.logger.info(f"Start step: {config_step.name}")
-        self.logger.info(f"Step config/specs: {config_step}")
-        step_result = StepResult(config_step.id, config_step.name, datetime.now())
-        try:
-            kwargs.pop('step_name', None)
-            result = Sequence._execute(f, *args, **kwargs)
-            step_result = self._test(result, step_result, config_step.specs)
-        except Exception:
-            self.logger.error(f"Unexpected error during sequence execution")
-            step_result.verdict = Verdict.ABORTED
-            raise
-        finally:
-            step_result.end_time = datetime.now()
-            self.logger.info(f"Result from step {config_step.name}: {step_result}")
-            self.logger.info(f"End step: {config_step.name}")
-            self.step_results.append(step_result)
-            step_ended.send(self, result=step_result)
-        return result
+        def decorator(fn):
+            if not callable(fn):
+                raise TypeError("@Sequence.step can only decorate callables")
+            if not fn.__name__.startswith("test_"):
+                raise ValueError("@Sequence.step methods must be named with a 'test_' prefix")
+            order = next(Sequence._step_order)
+
+            @wraps(fn)
+            def wrapper(self, *args, **kwargs):
+                return self._run_registered_step(fn, step_name, *args, **kwargs)
+
+            wrapper.__sequence_step__ = {"name": step_name, "order": order, "method_name": fn.__name__}
+            return wrapper
+
+        return decorator
 
     def _reset_log_file(self):
         logger = logging.getLogger("benderr")
@@ -204,111 +201,75 @@ class Sequence(ABC):
                 raise ValueError(f"{spec.comparator} not handled")
         return passed
 
-    @classmethod
-    def declared_steps_with_return(cls) -> list[tuple[str, str]]:
-        """
-        Inspect the source of cls.sequence() and return a list of
-        (step_name, return_type) as per our AST extractor logic.
-        """
-        # grab and dedent
-        source = inspect.getsource(cls.sequence)
-        source = textwrap.dedent(source)
-        tree = ast.parse(source)
-
-        # collect all step(...) calls
-        calls: list[tuple[str | None, ast.expr | None]] = []
-
-        class V(ast.NodeVisitor):
-            def visit_Call(self, node: ast.Call):
-                if (
-                    isinstance(node.func, ast.Attribute)
-                    and isinstance(node.func.value, ast.Name)
-                    and node.func.value.id == "self"
-                    and node.func.attr == "step"
-                ):
-                    custom = next(
-                        (
-                            kw.value.value
-                            for kw in node.keywords
-                            if kw.arg == "step_name" and isinstance(kw.value, ast.Constant)
-                        ),
-                        None,
-                    )
-                    pos = node.args[0] if node.args else None
-                    calls.append((custom, pos))
-                self.generic_visit(node)
-
-        V().visit(tree)
-
-        results: list[tuple[str, str]] = []
-
-        def is_numeric_val(v):
-            return isinstance(v, numbers.Number) and not isinstance(v, bool)
-
-        for custom, pos in calls:
-            # 1) name
-            if custom is not None:
-                name = custom
-            elif isinstance(pos, ast.Attribute):
-                name = pos.attr
-            elif isinstance(pos, ast.Name):
-                name = pos.id
-            elif isinstance(pos, ast.Lambda):
-                name = "lambda"
-            else:
-                name = "none"
-
-            # 2) return-type
-            ret_type = "none"
-            # Lambda literal inference
-            if isinstance(pos, ast.Lambda):
-                body = pos.body
-                if isinstance(body, ast.Constant) and isinstance(body.value, bool):
-                    ret_type = "bool"
-                elif (isinstance(body, ast.Constant) and is_numeric_val(body.value)) or (
-                    isinstance(body, ast.UnaryOp)
-                    and isinstance(body.op, ast.USub)
-                    and isinstance(body.operand, ast.Constant)
-                    and is_numeric_val(body.operand.value)
-                ):
-                    ret_type = "numeric"
-                elif isinstance(body, ast.Constant) and isinstance(body.value, str):
-                    ret_type = "str"
-            else:
-                # Named method — use annotations
-                fn_name = pos.attr if isinstance(pos, ast.Attribute) else pos.id if isinstance(pos, ast.Name) else None
-                if fn_name:
-                    fn = getattr(cls, fn_name, None)
-                    if fn:
-                        hints = get_type_hints(fn, include_extras=False)
-                        ann = hints.get("return", None)
-
-                        origin = get_origin(ann) or ann
-                        if origin is tuple:
-                            args = get_args(ann)
-                            if args:
-                                ret_type = f"tuple[{', '.join(a.__name__ for a in args)}]"
-                            else:
-                                ret_type = "tuple"
-                        elif ann is bool:
-                            ret_type = "bool"
-                        elif ann and issubclass(ann, numbers.Number):
-                            ret_type = "numeric"
-                        elif ann is str:
-                            ret_type = "str"
-                        elif isinstance(ann, type):
-                            ret_type = ann.__name__
-
-            results.append((name, ret_type))
-
-        return results
-
     def validate_steps(self, config_steps: list[Step]):
-        self_steps = self.declared_steps_with_return()
-        if len(self_steps) != len(config_steps):
+        registered = self._registered_steps
+        if len(registered) != len(config_steps):
             raise StepCountError(
-                f"Executable steps count ({len(self_steps)}) do not match configured steps count({len(config_steps)}!)"
+                f"Executable steps count ({len(registered)}) do not match configured steps count({len(config_steps)}!)"
             )
-        for i, step in enumerate(config_steps):
-            if self_steps[i][0] != step.name :
-                raise StepsConfigError(f"Declared step with name {self_steps[i][0]} differs from config {step.name}")
+        for index, step in enumerate(config_steps):
+            if registered[index]["config_name"] != step.name:
+                raise StepsConfigError(
+                    f"Declared step with name {registered[index]['config_name']} differs from config {step.name}"
+                )
+
+    def _collect_step_methods(self):
+        steps = []
+        for attr_name in dir(self):
+            if not attr_name.startswith("test_"):
+                continue
+            bound = getattr(self, attr_name)
+            if not callable(bound):
+                continue
+            func = getattr(bound, "__func__", None)
+            if func is None:
+                continue
+            metadata = getattr(func, "__sequence_step__", None)
+            if metadata is None:
+                raise StepsConfigError(
+                    f"Method {attr_name} must be decorated with @Sequence.step to be executed"
+                )
+            steps.append(
+                {
+                    "order": metadata["order"],
+                    "config_name": metadata["name"],
+                    "method": bound,
+                    "method_name": metadata.get("method_name", attr_name),
+                }
+            )
+        steps.sort(key=lambda entry: entry["order"])
+        return steps
+
+    def _next_config_step(self, expected_name: str) -> Step:
+        if self._config_index >= len(self.steps):
+            raise StepCountError(
+                f"Executable steps count ({self._config_index + 1}) exceed configured steps count({len(self.steps)}!)"
+            )
+        config_step = self.steps[self._config_index]
+        self._config_index += 1
+        if config_step.name != expected_name:
+            raise StepsConfigError(
+                f"Declared step with name {expected_name} differs from config {config_step.name}"
+            )
+        return config_step
+
+    def _run_registered_step(self, func, expected_step_name: str, *args, **kwargs):
+        config_step = self._next_config_step(expected_step_name)
+        step_started.send(self, step=config_step)
+        self.logger.info(f"Start step: {config_step.name}")
+        self.logger.info(f"Step config/specs: {config_step}")
+        step_result = StepResult(config_step.id, config_step.name, datetime.now())
+        try:
+            result = Sequence._execute(func, self, *args, **kwargs)
+            step_result = self._test(result, step_result, config_step.specs)
+        except Exception:
+            self.logger.error("Unexpected error during sequence execution")
+            step_result.verdict = Verdict.ABORTED
+            raise
+        finally:
+            step_result.end_time = datetime.now()
+            self.logger.info(f"Result from step {config_step.name}: {step_result}")
+            self.logger.info(f"End step: {config_step.name}")
+            self.step_results.append(step_result)
+            step_ended.send(self, result=step_result)
+        return result

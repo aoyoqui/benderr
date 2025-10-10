@@ -1,138 +1,65 @@
-from dataclasses import dataclass
-
 import pytest
-from br_tester.sequence import Sequence, Step, StepsConfigError
-from pydantic.dataclasses import dataclass as pddataclass
+
+from br_tester.br_types import Step, StepCountError, StepsConfigError
+from br_tester.sequence import Sequence
 
 
-@dataclass
-class CustomDataClass:
-    pass
-
-
-class CustomClass:
-    pass
-
-
-@pddataclass
-class CustomPydanticDataClass:
-    pass
-
-
-class TestSequence(Sequence):
+class TestSequenceOrdering(Sequence):
     __test__ = False
 
-    def sequence(self):
-        self.step(lambda: True)
-        self.step(self.return_unknown)
-        self.step(self.return_boolean)
-        self.step(self.return_string)
-        self.step(self.return_number)
-        self.step(self.return_none_but_type_number)
-        self.step(self.return_dataclass)
-        self.step(self.return_class)
-        self.step(self.return_pydantic_dataclass)
-        result = self.step(self.return_integer)
-        self.step(self.return_none_with_arguments, result)
-        self.step(self.return_tuple)
-        self.step(self.return_annotated_tuple)
-        self.step(self.return_boolean, step_name="New name")
-
-    def return_unknown(self):
+    @Sequence.step("Step One")
+    def test_first(self):
         return True
 
-    def return_boolean(self) -> bool:
+    @Sequence.step("Step Two")
+    def test_second(self):
         return False
 
-    def return_string(self) -> str:
-        return "foo"
 
-    def return_number(self) -> float:
-        return 1.0
+def test_registered_steps_in_order():
+    steps = [Step(1, "Step One"), Step(2, "Step Two")]
+    sequence = TestSequenceOrdering(steps)
 
-    def return_none_but_type_number(self) -> int:
-        pass
-
-    def return_dataclass(self) -> CustomDataClass:
-        return CustomDataClass()
-
-    def return_class(self) -> CustomClass:
-        return CustomClass()
-
-    def return_pydantic_dataclass(self) -> CustomPydanticDataClass:
-        return CustomPydanticDataClass()
-
-    def return_integer(self) -> int:
-        return 2
-
-    def return_none_with_argument(self, _):
-        pass
-
-    def return_tuple(self) -> tuple:
-        return "success", True
-
-    def return_annotated_tuple(self) -> tuple[int, int]:
-        return 1, True
+    registered_names = [entry["config_name"] for entry in sequence._registered_steps]
+    assert registered_names == ["Step One", "Step Two"]
 
 
-def test_sequence_check():
-    steps = TestSequence.declared_steps_with_return()
-
-    assert len(steps) == 14
-    assert steps[0][0] == "lambda"
-    assert steps[0][1] == "bool"
-    assert steps[1][0] == "return_unknown"
-    assert steps[1][1] == "none"
-    assert steps[2][0] == "return_boolean"
-    assert steps[2][1] == "bool"
-    assert steps[3][0] == "return_string"
-    assert steps[3][1] == "str"
-    assert steps[4][0] == "return_number"
-    assert steps[4][1] == "numeric"
-    assert steps[5][0] == "return_none_but_type_number"
-    assert steps[5][1] == "numeric"
-    assert steps[6][0] == "return_dataclass"
-    assert steps[6][1] == "CustomDataClass"
-    assert steps[7][0] == "return_class"
-    assert steps[7][1] == "CustomClass"
-    assert steps[8][0] == "return_pydantic_dataclass"
-    assert steps[8][1] == "CustomPydanticDataClass"
-    assert steps[9][0] == "return_integer"
-    assert steps[9][1] == "numeric"
-    assert steps[10][0] == "return_none_with_arguments"
-    assert steps[10][1] == "none"
-    assert steps[11][0] == "return_tuple"
-    assert steps[11][1] == "tuple"
-    assert steps[12][0] == "return_annotated_tuple"
-    assert steps[12][1] == "tuple[int, int]"
-    assert steps[13][0] == "New name"
-
-def external_step(foo):
-    return False
-
-class TestStepName(Sequence):
+class TestSequenceMissingDecorator(Sequence):
     __test__ = False
-    def sequence(self):
-        self.step(lambda : True)
-        self.step(external_step)
-        self.step(external_step, step_name="repeat")
-        self.step(self.internal_step, step_name="Internal Step")
 
-    def internal_step(self):
-        pass
+    def test_missing_decorator(self):
+        return True
 
-def test_step_names():
-    steps = [
-        Step(1, "lambda"),
-        Step(2, "external_step"),
-        Step(3, "repeat"),
-        Step(4, "Internal Step"),
-    ]
-    TestStepName(steps)
-    steps[1].name = "Name the configured step but not updating the sequence code accordingly"
+
+def test_missing_decorator_raises():
+    steps = [Step(1, "Step One")]
     with pytest.raises(StepsConfigError):
-        TestStepName(steps)
+        TestSequenceMissingDecorator(steps)
 
 
-if __name__ == "__main__":
-    pytest.main(["-v", "-rPx"]) 
+class TestSequenceNameMismatch(Sequence):
+    __test__ = False
+
+    @Sequence.step("Configured Name")
+    def test_step(self):
+        return True
+
+
+def test_step_name_mismatch():
+    steps = [Step(1, "Different Name")]
+    with pytest.raises(StepsConfigError):
+        TestSequenceNameMismatch(steps)
+
+
+class TestSequenceCountMismatch(Sequence):
+    __test__ = False
+
+    @Sequence.step("Only Step")
+    def test_only(self):
+        return True
+
+
+def test_step_count_mismatch():
+    steps = [Step(1, "Only Step"), Step(2, "Extra")]
+    with pytest.raises(StepCountError):
+        TestSequenceCountMismatch(steps)

@@ -8,25 +8,35 @@ from br_tester.br_logging import setup_logger
 
 
 class DemoSequence(Sequence):
-    def sequence(self):
-        self.step(self.step_1, step_name="Step 1. Boolean Spec")
-        self.step(self.step_2, step_name="Step 2. Boolean Spec")
-        self.step(self.step_3, step_name="Step 3. No Specs")
-        self.step(lambda: 1, step_name="Step 4. Lower limit")
-        self.step(lambda: -1, step_name="Step 5. Upper limit")
-        self.step(lambda: 0, step_name="Step 6. Equality (use lower limit)")
-        self.step(lambda: 0.5, step_name="Step 7. Lower and upper limit")
-
-    def step_1(self):
+    @Sequence.step("Step 1. Boolean Spec")
+    def test_step_1(self):
         return True
 
-    def step_2(self):
+    @Sequence.step("Step 2. Boolean Spec")
+    def test_step_2(self):
         time.sleep(1)
         return True
 
-    def step_3(self):
+    @Sequence.step("Step 3. No Specs")
+    def test_step_3(self):
         time.sleep(1)
         self.logger.info("Step 3 executed")
+
+    @Sequence.step("Step 4. Lower limit")
+    def test_step_4(self):
+        return 1
+
+    @Sequence.step("Step 5. Upper limit")
+    def test_step_5(self):
+        return -1
+
+    @Sequence.step("Step 6. Equality (use lower limit)")
+    def test_step_6(self):
+        return 0
+
+    @Sequence.step("Step 7. Lower and upper limit")
+    def test_step_7(self):
+        return 0.5
 
 
 if __name__ == "__main__":
@@ -36,4 +46,3 @@ if __name__ == "__main__":
     setup_logger()
     sequence = DemoSequence(steps)
     sequence.run()
-

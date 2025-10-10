@@ -34,10 +34,17 @@ def step_3(some_number, some_string):
 class TestSequenceStepCount(Sequence):
     __test__ = False
 
-    def sequence(self):
-        self.step(step_1, step_name="Step 1")
-        self.step(step_2, 1, step_name="Step 2")
-        self.step(step_3, 0, "foo", step_name="Step 3")
+    @Sequence.step("Step 1")
+    def test_step_1(self):
+        step_1()
+
+    @Sequence.step("Step 2")
+    def test_step_2(self):
+        step_2(1)
+
+    @Sequence.step("Step 3")
+    def test_step_3(self):
+        step_3(0, "foo")
 
 
 def test_sequence_init():
@@ -165,10 +172,17 @@ def test_step_with_args_kwargs():
 class TestSequenceNoSpecs(Sequence):
     __test__ = False
 
-    def sequence(self):
-        self.step(lambda x: x + 1, 3.0, step_name="Step Add")
-        self.step(lambda: 3.14, step_name="Step Pi")
-        self.step(print, "Foo", step_name="Step Print")
+    @Sequence.step("Step Add")
+    def test_add(self):
+        return (lambda x: x + 1)(3.0)
+
+    @Sequence.step("Step Pi")
+    def test_pi(self):
+        return 3.14
+
+    @Sequence.step("Step Print")
+    def test_print(self):
+        print("Foo")
 
 
 def test_pass_no_specs():
@@ -195,11 +209,21 @@ def test_boolean_spec_check():
 class TestSequenceBooleanSpecs(Sequence):
     __test__ = False
 
-    def sequence(self):
-        self.step(lambda: False, step_name="Step True")
-        self.step(lambda: True, step_name="Step True")
-        self.step(lambda: False, step_name="Step False")
-        self.step(lambda: True, step_name="Step False")
+    @Sequence.step("Step True")
+    def test_false_expected_true(self):
+        return False
+
+    @Sequence.step("Step True")
+    def test_true_expected_true(self):
+        return True
+
+    @Sequence.step("Step False")
+    def test_false_expected_false(self):
+        return False
+
+    @Sequence.step("Step False")
+    def test_true_expected_false(self):
+        return True
 
 
 def test_boolean_steps():
@@ -259,9 +283,13 @@ def step_raise_exception():
 class TestSequenceStartEndTime(Sequence):
     __test__ = False
 
-    def sequence(self):
-        self.step(delay_10ms)
-        self.step(step_raise_exception)
+    @Sequence.step("delay_10ms")
+    def test_delay(self):
+        delay_10ms()
+
+    @Sequence.step("step_raise_exception")
+    def test_raises(self):
+        step_raise_exception()
 
 
 def test_sequence_start_end_time():
@@ -395,19 +423,29 @@ def test_numeric_spec_fail():
 class TestSequenceNumericSpecs(Sequence):
     __test__ = False
 
-    def sequence(self):
-        self.step(lambda: 1.0)
-        self.step(lambda: 0xFF)
-        self.step(lambda: -2)
-        self.step(lambda: 0)
+    @Sequence.step("greater_than_zero")
+    def test_gt(self):
+        return 1.0
+
+    @Sequence.step("not_equal_zero")
+    def test_neq(self):
+        return 0xFF
+
+    @Sequence.step("range_fail_low")
+    def test_range_fail_low(self):
+        return -2
+
+    @Sequence.step("range_fail_high")
+    def test_range_fail_high(self):
+        return 0
 
 
 def test_numeric_steps():
     steps = [
-        Step(1, "lambda", [NumericSpec("Expect pass", NumericComparator.GT, 0)]),
-        Step(2, "lambda", [NumericSpec("Expect pass", NumericComparator.NEQ, 0)]),
-        Step(2, "lambda", [NumericSpec("Expect fail", NumericComparator.GTLE, 0, 1)]),
-        Step(2, "lambda", [NumericSpec("Expect fail", NumericComparator.LEGE, -2, 2)]),
+        Step(1, "greater_than_zero", [NumericSpec("Expect pass", NumericComparator.GT, 0)]),
+        Step(2, "not_equal_zero", [NumericSpec("Expect pass", NumericComparator.NEQ, 0)]),
+        Step(3, "range_fail_low", [NumericSpec("Expect fail", NumericComparator.GTLE, 0, 1)]),
+        Step(4, "range_fail_high", [NumericSpec("Expect fail", NumericComparator.LEGE, -2, 2)]),
     ]
     step_count = len(steps)
     sequence = TestSequenceNumericSpecs(steps)
@@ -434,8 +472,9 @@ def test_numeric_steps():
 class TestSequenceNumericSpecMismatch(Sequence):
     __test__ = False
 
-    def sequence(self):
-        self.step(lambda: 3.14)
+    @Sequence.step("pi")
+    def test_pi(self):
+        return 3.14
 
 
 def test_numeric_spec_mismatch():
