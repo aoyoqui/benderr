@@ -1,6 +1,7 @@
-from br_tester.br_types import StepResult, Step
-from PySide6.QtCore import QAbstractTableModel, Qt
+from br_tester.br_types import Step, StepResult
 from core.event_bridge import EventBridge
+from PySide6.QtCore import QAbstractTableModel, Qt
+
 
 class StepTableModel(QAbstractTableModel):
     def __init__(self, step: Step, bridge: EventBridge):

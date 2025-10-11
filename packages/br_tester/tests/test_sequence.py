@@ -2,6 +2,7 @@ import time
 from datetime import datetime
 
 import pytest
+from br_tester.br_logging import setup_logger
 from br_tester.br_types import (
     BooleanSpec,
     NumericComparator,
@@ -12,9 +13,8 @@ from br_tester.br_types import (
     StepResult,
     Verdict,
 )
-from br_tester.sequence import Sequence
 from br_tester.config import AppConfig
-from br_tester.br_logging import setup_logger
+from br_tester.sequence import Sequence
 
 AppConfig.load(profile="ci", config_dirs=["./config"])
 setup_logger()

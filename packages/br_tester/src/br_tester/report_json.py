@@ -1,6 +1,8 @@
-from br_tester.report import ReportFormatter
-from br_tester.br_types import SequenceResult
 from pydantic import TypeAdapter
+
+from br_tester.br_types import SequenceResult
+from br_tester.report import ReportFormatter
+
 
 class JsonReportFormatter(ReportFormatter):
     @property

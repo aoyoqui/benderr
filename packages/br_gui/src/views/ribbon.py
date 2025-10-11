@@ -1,14 +1,20 @@
 
-import sys
-from pathlib import Path
 from importlib.metadata import entry_points
+from pathlib import Path
 
-from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QToolBar,
-    QWidget, QBoxLayout, QTabBar, QStackedWidget, QToolButton,
-    QVBoxLayout, QComboBox, QPushButton, QFileDialog
-)
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QBoxLayout,
+    QComboBox,
+    QFileDialog,
+    QPushButton,
+    QStackedWidget,
+    QTabBar,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
+
 
 class RibbonButton(QToolButton):
     def __init__(self, text: str, icon=None):

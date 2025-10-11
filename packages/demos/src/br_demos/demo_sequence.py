@@ -1,10 +1,10 @@
 import time
 from pathlib import Path
 
+from br_tester.br_logging import setup_logger
 from br_tester.config import AppConfig
 from br_tester.parse_steps import steps_from_file
 from br_tester.sequence import Sequence
-from br_tester.br_logging import setup_logger
 
 
 class DemoSequence(Sequence):

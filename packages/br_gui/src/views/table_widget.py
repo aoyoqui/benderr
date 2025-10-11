@@ -1,6 +1,5 @@
-from PySide6.QtWidgets import QWidget, QTableView, QVBoxLayout, QHeaderView, QSizePolicy
-from PySide6.QtCore import QModelIndex, QAbstractItemModel
-
+from PySide6.QtCore import QAbstractItemModel, QModelIndex
+from PySide6.QtWidgets import QHeaderView, QSizePolicy, QTableView, QVBoxLayout, QWidget
 
 
 class TableWidget(QWidget):

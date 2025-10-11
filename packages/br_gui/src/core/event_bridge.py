@@ -1,7 +1,7 @@
+from br_tester.br_types import Step, StepResult
+from br_tester.events import log_msg, step_ended, step_started
 from PySide6.QtCore import QObject, Signal
 
-from br_tester.br_types import StepResult, Step
-from br_tester.events import step_ended, step_started, log_msg
 
 class EventBridge(QObject):
     qt_step_started = Signal(Step)

@@ -1,10 +1,9 @@
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-from views.collapsible_widget import Container
 from br_tester.br_types import Step, StepResult, Verdict
 from core.event_bridge import EventBridge
-
 from models.table_model import StepTableModel
+from PySide6.QtWidgets import QVBoxLayout, QWidget
+
+from views.collapsible_widget import Container
 from views.table_widget import TableWidget
 
 

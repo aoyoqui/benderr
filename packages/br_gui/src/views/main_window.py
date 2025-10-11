@@ -2,16 +2,26 @@ import sys
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from PySide6.QtWidgets import QMainWindow, QStackedWidget, QVBoxLayout, QApplication, QToolBar, QDockWidget, QPlainTextEdit, QWidget, QTableWidget
-from PySide6.QtCore import QThread, Slot, QObject, Qt
 import PySide6QtAds as QtAds
-
-from views.step_widget import StepWidget
-from views.ribbon import TabbedRibbonContainer, RunSequenceRibbonPage, RibbonPage
-from core.event_bridge import EventBridge
-from br_tester.parse_steps import steps_from_file
-from br_tester.config import AppConfig
 from br_tester.br_logging import setup_logger
+from br_tester.config import AppConfig
+from br_tester.parse_steps import steps_from_file
+from core.event_bridge import EventBridge
+from PySide6.QtCore import QObject, Qt, QThread, Slot
+from PySide6.QtWidgets import (
+    QApplication,
+    QDockWidget,
+    QMainWindow,
+    QPlainTextEdit,
+    QStackedWidget,
+    QTableWidget,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
+)
+
+from views.ribbon import RibbonPage, RunSequenceRibbonPage, TabbedRibbonContainer
+from views.step_widget import StepWidget
 
 
 class Worker(QObject):
@@ -62,7 +72,6 @@ class MainWindow(QMainWindow):
         self.central_widget.addWidget(run_widget)
 
         config_widget = QWidget()
-        config_layout = QVBoxLayout(config_widget)
         self.central_widget.addWidget(config_widget)
 
         self.instruments_widget = QtAds.CDockManager(self.central_widget)

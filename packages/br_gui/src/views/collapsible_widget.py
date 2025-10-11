@@ -1,7 +1,7 @@
 # From https://github.com/EsoCoding/PySide6-Collapsible-Widget/blob/main/README.md
 
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QSizePolicy, QStackedLayout, QSpacerItem, QVBoxLayout
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QSpacerItem, QStackedLayout, QVBoxLayout, QWidget
 
 
 class CollapsibleWidget(QWidget):
@@ -62,15 +62,14 @@ class CollapsibleWidget(QWidget):
 
 class Container(QWidget):
     def __init__(self, name, color_background=False):
-            super(Container, self).__init__() # Call the constructor of the parent class
+            super(Container, self).__init__()
     
-            layout = QVBoxLayout(self) # Create a QVBoxLayout instance and pass the current object as the parent
-            layout.setContentsMargins(0, 0, 0, 0) # Set the margins of the layout to 0
+            layout = QVBoxLayout(self)
+            layout.setContentsMargins(0, 0, 0, 0)
     
-            self._content_widget = QWidget() # Create a QWidget instance and assign it to the instance variable _content_widget
+            self._content_widget = QWidget()
     
             if color_background:
-                # If color_background is True, set the stylesheet of _content_widget to have a lighter background color
                 self._content_widget.setStyleSheet(".QWidget{background-color: rgb(73, 73, 73); "
                                                    "margin-left: 2px; padding-top: 20px; margin-right: 2px}")
    
@@ -85,5 +84,5 @@ class Container(QWidget):
     
     @property
     def contentWidget(self):
-            return self._content_widget # Return the _content_widget when the contentWidget property is accessed
+            return self._content_widget
     

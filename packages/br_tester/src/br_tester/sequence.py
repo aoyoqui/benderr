@@ -1,28 +1,29 @@
+import logging
 import numbers
 import tempfile
-import logging
-from pathlib import Path
 from abc import ABC
 from datetime import datetime
 from functools import wraps
 from itertools import count
+from pathlib import Path
 
 from br_tester.br_types import (
     BooleanSpec,
     Measurement,
     NumericComparator,
     NumericSpec,
+    SequenceResult,
     SpecMismatch,
     Step,
     StepCountError,
     StepResult,
-    Verdict,
     StepsConfigError,
-    SequenceResult
+    Verdict,
 )
-from br_tester.events import step_ended, step_started
 from br_tester.config import AppConfig
+from br_tester.events import step_ended, step_started
 from br_tester.report import ReportFormatter
+
 
 class Sequence(ABC):
     _step_order = count()

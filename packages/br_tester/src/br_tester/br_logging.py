@@ -4,6 +4,7 @@ from datetime import datetime
 from br_tester.config import AppConfig
 from br_tester.events import log_msg
 
+
 def setup_logger():
     logger = logging.getLogger("benderr")
     logger.setLevel(logging.DEBUG)

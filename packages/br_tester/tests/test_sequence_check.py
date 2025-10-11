@@ -1,5 +1,4 @@
 import pytest
-
 from br_tester.br_types import Step, StepCountError, StepsConfigError
 from br_tester.sequence import Sequence
 
