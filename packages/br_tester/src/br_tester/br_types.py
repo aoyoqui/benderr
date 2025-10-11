@@ -94,8 +94,9 @@ class NumericSpec:
 
 @dataclass
 class StringSpec:
-    expected_value: str
-    case_sensitive: bool
+    name: str
+    expected: str
+    case_sensitive: bool = True
     type: Literal[SpecType.STRING] = SpecType.STRING
 
 

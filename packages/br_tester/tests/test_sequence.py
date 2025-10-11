@@ -11,6 +11,7 @@ from br_tester.br_types import (
     Step,
     StepCountError,
     StepResult,
+    StringSpec,
     Verdict,
 )
 from br_tester.config import AppConfig
@@ -272,7 +273,7 @@ class TestSequenceListPass(Sequence):
 
     @Sequence.step("List Step")
     def test_list(self):
-        return [True, 1.5]
+        return [True, 1.5, "Done"]
 
 
 def test_list_step_pass():
@@ -283,13 +284,14 @@ def test_list_step_pass():
             [
                 BooleanSpec("Bool True", pass_if_true=True),
                 NumericSpec("Voltage", NumericComparator.GT, 1.0),
+                StringSpec("Status", expected="Done", case_sensitive=True),
             ],
         )
     ]
     sequence = TestSequenceListPass(steps)
     sequence.run()
     assert sequence.step_results[0].verdict == Verdict.PASSED
-    assert [m.value for m in sequence.step_results[0].results] == [True, 1.5]
+    assert [m.value for m in sequence.step_results[0].results] == [True, 1.5, "Done"]
     assert all(m.passed for m in sequence.step_results[0].results)
 
 
@@ -377,6 +379,95 @@ def test_list_step_unsupported_type():
         )
     ]
     sequence = TestSequenceListUnsupported(steps)
+    with pytest.raises(SpecMismatch):
+        sequence.run()
+
+
+def test_list_step_string_spec_mismatch():
+    steps = [
+        Step(
+            1,
+            "List Step",
+            [
+                BooleanSpec("Bool True", pass_if_true=True),
+                NumericSpec("Voltage", NumericComparator.GT, 1.0),
+                NumericSpec("Should be string", NumericComparator.GT, 0.0),
+            ],
+        )
+    ]
+    sequence = TestSequenceListPass(steps)
+    with pytest.raises(SpecMismatch):
+        sequence.run()
+
+
+class TestSequenceString(Sequence):
+    __test__ = False
+
+    @Sequence.step("String Step")
+    def test_string(self):
+        return "Hello"
+
+
+def test_string_step_pass():
+    steps = [
+        Step(
+            1,
+            "String Step",
+            [
+                StringSpec("Greeting", expected="Hello", case_sensitive=True),
+            ],
+        )
+    ]
+    sequence = TestSequenceString(steps)
+    sequence.run()
+    assert sequence.step_results[0].verdict == Verdict.PASSED
+    assert sequence.step_results[0].results[0].passed
+    assert sequence.step_results[0].results[0].value == "Hello"
+
+
+def test_string_step_case_insensitive_pass():
+    steps = [
+        Step(
+            1,
+            "String Step",
+            [
+                StringSpec("Greeting", expected="hello", case_sensitive=False),
+            ],
+        )
+    ]
+    sequence = TestSequenceString(steps)
+    sequence.run()
+    assert sequence.step_results[0].verdict == Verdict.PASSED
+    assert sequence.step_results[0].results[0].passed
+
+
+def test_string_step_fail():
+    steps = [
+        Step(
+            1,
+            "String Step",
+            [
+                StringSpec("Greeting", expected="Bye", case_sensitive=True),
+            ],
+        )
+    ]
+    sequence = TestSequenceString(steps)
+    sequence.run()
+    assert sequence.step_results[0].verdict == Verdict.FAILED
+    assert not sequence.step_results[0].results[0].passed
+
+
+def test_string_spec_mismatch():
+    steps = [
+        Step(
+            1,
+            "String Step",
+            [
+                NumericSpec("Voltage", NumericComparator.GT, 0.0),
+            ],
+        )
+    ]
+    sequence = TestSequenceString(steps)
     with pytest.raises(SpecMismatch):
         sequence.run()
 

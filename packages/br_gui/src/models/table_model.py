@@ -21,6 +21,9 @@ class StepTableModel(QAbstractTableModel):
                     self._data[i][4] = spec.lower
                     self._data[i][5] = spec.upper
                     self._data[i][6] = spec.units
+                case "string":
+                    self._data[i][3] = "=="
+                    self._data[i][4] = spec.expected
 
 
     def data(self, index, role):
@@ -51,6 +54,8 @@ class StepTableModel(QAbstractTableModel):
                     case "boolean":
                         self._data[i][2] = res.value
                     case "numeric":
+                        self._data[i][2] = res.value
+                    case "string":
                         self._data[i][2] = res.value
 
         top_left     = self.index(0, 0)

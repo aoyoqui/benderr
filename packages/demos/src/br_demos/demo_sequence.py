@@ -42,6 +42,10 @@ class DemoSequence(Sequence):
     def test_step_8(self):
         return [True, 0.75]
 
+    @Sequence.step("Step 9. String equality")
+    def test_step_9(self):
+        return "Calibrated"
+
 
 if __name__ == "__main__":
     json_path = Path(__file__).parent / "demo_steps.json"

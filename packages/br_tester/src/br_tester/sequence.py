@@ -18,6 +18,7 @@ from br_tester.br_types import (
     StepCountError,
     StepResult,
     StepsConfigError,
+    StringSpec,
     Verdict,
 )
 from br_tester.config import AppConfig
@@ -129,6 +130,8 @@ class Sequence(ABC):
             step_result = self._test_boolean(result, specs, step_result)
         elif isinstance(result, numbers.Number):
             step_result = self._test_numeric(result, specs, step_result)
+        elif isinstance(result, str):
+            step_result = self._test_string(result, specs, step_result)
         elif isinstance(result, (list, tuple)):
             step_result = self._test_iterable(result, specs, step_result)
         else:
@@ -204,6 +207,23 @@ class Sequence(ABC):
                 raise ValueError(f"{spec.comparator} not handled")
         return passed
 
+    @staticmethod
+    def _test_string(result: str, specs, step_result: StepResult):
+        if len(specs) != 1:
+            raise SpecMismatch(
+                f"Result is a single string but spec count ({len(specs)}) is not exactly one: {specs}"
+            )
+        spec = specs[0]
+        if not isinstance(spec, StringSpec):
+            raise SpecMismatch(f"Result is a string but spec does not define a string check: {spec}")
+        if spec.case_sensitive:
+            passed = result == spec.expected
+        else:
+            passed = result.lower() == spec.expected.lower()
+        step_result.verdict = Verdict.PASSED if passed else Verdict.FAILED
+        step_result.results.append(Measurement(result, passed, spec))
+        return step_result
+
     def _test_iterable(self, result_seq, specs, step_result: StepResult):
         result_list = list(result_seq)
         if len(result_list) != len(specs):
@@ -224,9 +244,19 @@ class Sequence(ABC):
                         f"Numeric result encountered but spec does not define a numeric test: {spec}"
                     )
                 passed = Sequence._numeric_test_passes(value, spec)
+            elif isinstance(value, str):
+                if not isinstance(spec, StringSpec):
+                    raise SpecMismatch(
+                        f"String result encountered but spec does not define a string check: {spec}"
+                    )
+                if spec.case_sensitive:
+                    passed = value == spec.expected
+                else:
+                    passed = value.lower() == spec.expected.lower()
             else:
                 raise SpecMismatch(
-                    f"Unsupported result type '{type(value).__name__}' in sequence; only bool and numeric supported"
+                    f"Unsupported result type '{type(value).__name__}' in sequence; "
+                    "only bool, numeric, and string supported"
                 )
             step_result.results.append(Measurement(value, passed, spec))
             if not passed:

@@ -95,5 +95,17 @@
         "type": "numeric"
       }
     ]
+  },
+  {
+    "id": 9,
+    "name": "Step 9. String equality",
+    "specs": [
+      {
+        "name": "Status",
+        "expected": "Calibrated",
+        "case_sensitive": false,
+        "type": "string"
+      }
+    ]
   }
 ]
