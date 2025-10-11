@@ -1,6 +1,6 @@
 import pytest
-from br_tester.br_types import Step, StepCountError, StepsConfigError
-from br_tester.sequence import Sequence
+from br_sdk.br_types import Step, StepCountError, StepsConfigError
+from br_sdk.sequence import Sequence
 
 
 class TestSequenceOrdering(Sequence):

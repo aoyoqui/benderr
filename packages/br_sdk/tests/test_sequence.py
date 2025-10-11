@@ -2,8 +2,8 @@ import time
 from datetime import datetime
 
 import pytest
-from br_tester.br_logging import setup_logger
-from br_tester.br_types import (
+from br_sdk.br_logging import setup_logger
+from br_sdk.br_types import (
     BooleanSpec,
     NumericComparator,
     NumericSpec,
@@ -14,8 +14,8 @@ from br_tester.br_types import (
     StringSpec,
     Verdict,
 )
-from br_tester.config import AppConfig
-from br_tester.sequence import Sequence
+from br_sdk.config import AppConfig
+from br_sdk.sequence import Sequence
 
 AppConfig.load(profile="ci", config_dirs=["./config"])
 setup_logger()

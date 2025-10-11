@@ -1,5 +1,5 @@
-from br_tester.br_types import Step, StepResult
-from br_tester.events import log_msg, step_ended, step_started
+from br_sdk.br_types import Step, StepResult
+from br_sdk.events import log_msg, step_ended, step_started
 from PySide6.QtCore import QObject, Signal
 
 

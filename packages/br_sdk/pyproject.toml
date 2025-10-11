@@ -2,7 +2,7 @@
 package = true
 
 [project]
-name = "br_tester"
+name = "br_sdk"
 version = "0.1.0"
 dependencies = [
     "blinker>=1.9.0",

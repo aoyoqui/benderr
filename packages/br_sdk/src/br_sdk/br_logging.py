@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime
 
-from br_tester.config import AppConfig
-from br_tester.events import log_msg
+from br_sdk.config import AppConfig
+from br_sdk.events import log_msg
 
 
 def setup_logger():

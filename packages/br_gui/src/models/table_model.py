@@ -1,4 +1,4 @@
-from br_tester.br_types import Step, StepResult
+from br_sdk.br_types import Step, StepResult
 from core.event_bridge import EventBridge
 from PySide6.QtCore import QAbstractTableModel, Qt
 

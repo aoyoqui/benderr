@@ -1,6 +1,6 @@
 import json
 
-from br_tester.br_types import Step
+from br_sdk.br_types import Step
 
 
 def steps_from_file(file_path):

@@ -1,7 +1,7 @@
 from pydantic import TypeAdapter
 
-from br_tester.br_types import SequenceResult
-from br_tester.report import ReportFormatter
+from br_sdk.br_types import SequenceResult
+from br_sdk.report import ReportFormatter
 
 
 class JsonReportFormatter(ReportFormatter):

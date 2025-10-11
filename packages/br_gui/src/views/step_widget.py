@@ -1,4 +1,4 @@
-from br_tester.br_types import Step, StepResult, Verdict
+from br_sdk.br_types import Step, StepResult, Verdict
 from core.event_bridge import EventBridge
 from models.table_model import StepTableModel
 from PySide6.QtWidgets import QVBoxLayout, QWidget

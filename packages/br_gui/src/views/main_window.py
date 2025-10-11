@@ -3,9 +3,9 @@ from importlib.metadata import entry_points
 from pathlib import Path
 
 import PySide6QtAds as QtAds
-from br_tester.br_logging import setup_logger
-from br_tester.config import AppConfig
-from br_tester.parse_steps import steps_from_file
+from br_sdk.br_logging import setup_logger
+from br_sdk.config import AppConfig
+from br_sdk.parse_steps import steps_from_file
 from core.event_bridge import EventBridge
 from PySide6.QtCore import QObject, Qt, QThread, Slot
 from PySide6.QtWidgets import (

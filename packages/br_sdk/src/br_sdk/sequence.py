@@ -7,7 +7,7 @@ from functools import wraps
 from itertools import count
 from pathlib import Path
 
-from br_tester.br_types import (
+from br_sdk.br_types import (
     BooleanSpec,
     Measurement,
     NumericComparator,
@@ -21,9 +21,9 @@ from br_tester.br_types import (
     StringSpec,
     Verdict,
 )
-from br_tester.config import AppConfig
-from br_tester.events import step_ended, step_started
-from br_tester.report import ReportFormatter
+from br_sdk.config import AppConfig
+from br_sdk.events import step_ended, step_started
+from br_sdk.report import ReportFormatter
 
 
 class Sequence(ABC):

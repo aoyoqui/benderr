@@ -2,12 +2,12 @@ import argparse
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from br_tester.br_logging import setup_logger
-from br_tester.br_types import Measurement, Step, StepResult, Verdict
-from br_tester.config import AppConfig
-from br_tester.events import step_ended, step_started
-from br_tester.parse_steps import steps_from_file
-from br_tester.report_json import JsonReportFormatter
+from br_sdk.br_logging import setup_logger
+from br_sdk.br_types import Measurement, Step, StepResult, Verdict
+from br_sdk.config import AppConfig
+from br_sdk.events import step_ended, step_started
+from br_sdk.parse_steps import steps_from_file
+from br_sdk.report_json import JsonReportFormatter
 from rich.console import Console
 from rich.table import Table
 
