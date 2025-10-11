@@ -9,7 +9,7 @@ class StepTableModel(QAbstractTableModel):
         self.id = step.id
         self.bridge = bridge
         self._headers = ["Passed", "Spec name", "Value", "Comparator", "Lower", "Upper", "Units"]
-        self._data = [[None] * 7]*len(step.specs) 
+        self._data = [[None] * 7 for _ in step.specs]
         self.bridge.qt_step_ended.connect(self.handle_step_ended)
         for i, spec in enumerate(step.specs):
             self._data[i][1] = spec.name
@@ -54,5 +54,5 @@ class StepTableModel(QAbstractTableModel):
                         self._data[i][2] = res.value
 
         top_left     = self.index(0, 0)
-        bottom_right = self.index(len(self._data), len(self._data[0]))
+        bottom_right = self.index(len(self._data) - 1, len(self._data[0]) - 1)
         self.dataChanged.emit(top_left, bottom_right, [Qt.DisplayRole])
