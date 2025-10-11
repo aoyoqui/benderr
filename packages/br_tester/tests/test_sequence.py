@@ -267,6 +267,120 @@ def test_boolean_spec_mismatch():
         )
 
 
+class TestSequenceListPass(Sequence):
+    __test__ = False
+
+    @Sequence.step("List Step")
+    def test_list(self):
+        return [True, 1.5]
+
+
+def test_list_step_pass():
+    steps = [
+        Step(
+            1,
+            "List Step",
+            [
+                BooleanSpec("Bool True", pass_if_true=True),
+                NumericSpec("Voltage", NumericComparator.GT, 1.0),
+            ],
+        )
+    ]
+    sequence = TestSequenceListPass(steps)
+    sequence.run()
+    assert sequence.step_results[0].verdict == Verdict.PASSED
+    assert [m.value for m in sequence.step_results[0].results] == [True, 1.5]
+    assert all(m.passed for m in sequence.step_results[0].results)
+
+
+class TestSequenceListFail(Sequence):
+    __test__ = False
+
+    @Sequence.step("List Step")
+    def test_list(self):
+        return [True, -1.0]
+
+
+def test_list_step_fail():
+    steps = [
+        Step(
+            1,
+            "List Step",
+            [
+                BooleanSpec("Bool True", pass_if_true=True),
+                NumericSpec("Voltage", NumericComparator.GT, 0.0),
+            ],
+        )
+    ]
+    sequence = TestSequenceListFail(steps)
+    sequence.run()
+    assert sequence.step_results[0].verdict == Verdict.FAILED
+    assert [m.value for m in sequence.step_results[0].results] == [True, -1.0]
+    assert sequence.step_results[0].results[0].passed
+    assert not sequence.step_results[0].results[1].passed
+
+
+class TestSequenceListMismatch(Sequence):
+    __test__ = False
+
+    @Sequence.step("List Step")
+    def test_list(self):
+        return [True, False]
+
+
+def test_list_step_length_mismatch():
+    steps = [
+        Step(
+            1,
+            "List Step",
+            [BooleanSpec("Bool True", pass_if_true=True)],
+        )
+    ]
+    sequence = TestSequenceListMismatch(steps)
+    with pytest.raises(SpecMismatch):
+        sequence.run()
+
+
+def test_list_step_type_mismatch():
+    steps = [
+        Step(
+            1,
+            "List Step",
+            [
+                BooleanSpec("Bool True", pass_if_true=True),
+                BooleanSpec("Second Bool", pass_if_true=True),
+            ],
+        )
+    ]
+    sequence = TestSequenceListFail(steps)
+    with pytest.raises(SpecMismatch):
+        sequence.run()
+
+
+class TestSequenceListUnsupported(Sequence):
+    __test__ = False
+
+    @Sequence.step("List Step")
+    def test_list(self):
+        return [True, "unexpected"]
+
+
+def test_list_step_unsupported_type():
+    steps = [
+        Step(
+            1,
+            "List Step",
+            [
+                BooleanSpec("Bool True", pass_if_true=True),
+                NumericSpec("Voltage", NumericComparator.GT, 0.0),
+            ],
+        )
+    ]
+    sequence = TestSequenceListUnsupported(steps)
+    with pytest.raises(SpecMismatch):
+        sequence.run()
+
+
 def delay_10ms():
     time.sleep(0.01)
 

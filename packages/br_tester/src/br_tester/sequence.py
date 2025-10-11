@@ -128,6 +128,8 @@ class Sequence(ABC):
             step_result = self._test_boolean(result, specs, step_result)
         elif isinstance(result, numbers.Number):
             step_result = self._test_numeric(result, specs, step_result)
+        elif isinstance(result, (list, tuple)):
+            step_result = self._test_iterable(result, specs, step_result)
         else:
             pass
         return step_result
@@ -200,6 +202,36 @@ class Sequence(ABC):
             case _:
                 raise ValueError(f"{spec.comparator} not handled")
         return passed
+
+    def _test_iterable(self, result_seq, specs, step_result: StepResult):
+        result_list = list(result_seq)
+        if len(result_list) != len(specs):
+            raise SpecMismatch(
+                f"Result sequence length ({len(result_list)}) does not match specs count ({len(specs)})"
+            )
+        verdict = Verdict.PASSED
+        for value, spec in zip(result_list, specs, strict=True):
+            if isinstance(value, bool):
+                if not isinstance(spec, BooleanSpec):
+                    raise SpecMismatch(
+                        f"Boolean result encountered but spec does not define a boolean check: {spec}"
+                    )
+                passed = Sequence._boolean_spec_passes(value, spec)
+            elif isinstance(value, numbers.Number):
+                if not isinstance(spec, NumericSpec):
+                    raise SpecMismatch(
+                        f"Numeric result encountered but spec does not define a numeric test: {spec}"
+                    )
+                passed = Sequence._numeric_test_passes(value, spec)
+            else:
+                raise SpecMismatch(
+                    f"Unsupported result type '{type(value).__name__}' in sequence; only bool and numeric supported"
+                )
+            step_result.results.append(Measurement(value, passed, spec))
+            if not passed:
+                verdict = Verdict.FAILED
+        step_result.verdict = verdict
+        return step_result
 
     def validate_steps(self, config_steps: list[Step]):
         registered = self._registered_steps

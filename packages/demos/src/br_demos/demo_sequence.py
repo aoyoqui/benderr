@@ -38,6 +38,10 @@ class DemoSequence(Sequence):
     def test_step_7(self):
         return 0.5
 
+    @Sequence.step("Step 8. Mixed results")
+    def test_step_8(self):
+        return [True, 0.75]
+
 
 if __name__ == "__main__":
     json_path = Path(__file__).parent / "demo_steps.json"

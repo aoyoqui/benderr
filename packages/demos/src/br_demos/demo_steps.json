@@ -77,5 +77,23 @@
         "type": "numeric"
       }
     ]
+  },
+  {
+    "id": 8,
+    "name": "Step 8. Mixed results",
+    "specs": [
+      {
+        "name": "Pass if true",
+        "pass_if_true": true,
+        "type": "boolean"
+      },
+      {
+        "name": "Pass if value at least",
+        "comparator": "GE",
+        "lower": 0.5,
+        "units": "ratio",
+        "type": "numeric"
+      }
+    ]
   }
 ]
