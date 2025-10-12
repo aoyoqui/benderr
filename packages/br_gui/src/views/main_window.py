@@ -1,16 +1,11 @@
-import sys
-from importlib.metadata import entry_points
-from pathlib import Path
 
 import PySide6QtAds as QtAds
-from br_sdk.br_logging import setup_logger
-from br_sdk.config import AppConfig
 from br_sdk.events import shutdown_event_server
 from br_sdk.parse_steps import steps_from_file
 from core.event_bridge import EventBridge
-from PySide6.QtCore import QObject, Qt, QThread, Slot
+from core.worker import Worker
+from PySide6.QtCore import Qt, QThread
 from PySide6.QtWidgets import (
-    QApplication,
     QDockWidget,
     QMainWindow,
     QPlainTextEdit,
@@ -25,39 +20,30 @@ from views.ribbon import RibbonPage, RunSequenceRibbonPage, TabbedRibbonContaine
 from views.step_widget import StepWidget
 
 
-class Worker(QObject):
-    def __init__(self, sequence, steps):
-        super().__init__()
-        self.selected_sequence = sequence
-        self.steps = steps
-
-    @Slot()
-    def run(self):
-        SequenceClass = get_sequence(self.selected_sequence)
-        sequence = SequenceClass(self.steps)
-        sequence.run()
-
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
         self.selected_sequence = None
-        self.config_path: Path | None = None
+        self.config_path = None
+        self._thread = None
+        self._worker = None
+        self.running = False
 
-        QtAds.CDockManager.setConfigFlag(QtAds.CDockManager.OpaqueSplitterResize, True)
-        QtAds.CDockManager.setConfigFlag(QtAds.CDockManager.XmlCompressionEnabled, False)
-        QtAds.CDockManager.setConfigFlag(QtAds.CDockManager.FocusHighlighting, True)
-
-        run_ribbon = RunSequenceRibbonPage()
-        run_ribbon.sequence_selected.connect(self._sequence_selected)
-        run_ribbon.start_btn.clicked.connect(self._start_sequence)
-        config_ribbon = RibbonPage("Config", 3)
-        instruments_ribbon = RibbonPage("Instruments", 8)
-        instruments_ribbon.button_clicked.connect(self.handle_instrument_clicked)
-        ribbon = TabbedRibbonContainer([run_ribbon, config_ribbon, instruments_ribbon])
-        ribbon.tab_ribbon_index_changed.connect(self.change_page)
-
+        self.set_header()
+        self.set_central_widget()
+        self.set_footer()
+        self.set_bridge()
+    
+    def set_header(self):
+        ribbon = self.set_ribbon()
+        self.set_toolbar(ribbon)
+ 
+    def set_bridge(self):
+        self.bridge = EventBridge()
+        self.bridge.qt_log_msg.connect(lambda log_msg: self.log_widget.appendPlainText(log_msg))
+        
+    def set_toolbar(self, ribbon):
         toolbar = QToolBar("Ribbon", self)
         toolbar.setMovable(True)
         toolbar.setFloatable(False)
@@ -66,8 +52,11 @@ class MainWindow(QMainWindow):
 
         toolbar.orientationChanged.connect(ribbon.setOrientation)
 
+    def set_central_widget(self):
+        self.set_dock_manager()
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
+        
         run_widget = QWidget()
         self.run_layout = QVBoxLayout(run_widget)
         self.central_widget.addWidget(run_widget)
@@ -76,6 +65,7 @@ class MainWindow(QMainWindow):
         self.central_widget.addWidget(config_widget)
 
         self.instruments_widget = QtAds.CDockManager(self.central_widget)
+
         text_edit = QPlainTextEdit()
         text_edit.setPlaceholderText("This is the central instruments widget. Can be removed if no default needed")
         central_instr_widget = QtAds.CDockWidget("CentralWidget")
@@ -84,21 +74,34 @@ class MainWindow(QMainWindow):
         central_instr_area.setAllowedAreas(QtAds.DockWidgetArea.OuterDockAreas)
         self.central_widget.addWidget(self.instruments_widget)
 
-
+    def set_footer(self):
         dock = QDockWidget("Log", self)
-        log_widget = QPlainTextEdit()
-        log_widget.setReadOnly(True)
-
-        self.bridge = EventBridge()
-
-        self.bridge.qt_log_msg.connect(lambda log_msg: log_widget.appendPlainText(log_msg))
-        dock.setWidget(log_widget)
+        self.log_widget = QPlainTextEdit()
+        self.log_widget.setReadOnly(True)
+        dock.setWidget(self.log_widget)
         self.addDockWidget(Qt.BottomDockWidgetArea, dock)
-        
-        self._thread: QThread | None = None
-        self._worker: Worker | None = None
-        self.running = False
-        
+
+    
+    def set_ribbon(self):
+        run_ribbon = RunSequenceRibbonPage()
+        run_ribbon.sequence_selected.connect(self._sequence_selected)
+        run_ribbon.start_btn.clicked.connect(self._start_sequence)
+
+        config_ribbon = RibbonPage("Config", 3)
+
+        instruments_ribbon = RibbonPage("Instruments", 8)
+        instruments_ribbon.button_clicked.connect(self.handle_instrument_clicked)
+
+        ribbon = TabbedRibbonContainer([run_ribbon, config_ribbon, instruments_ribbon])
+        ribbon.tab_ribbon_index_changed.connect(self.change_page)
+        return ribbon
+
+
+    def set_dock_manager(self):
+        QtAds.CDockManager.setConfigFlag(QtAds.CDockManager.OpaqueSplitterResize, True)
+        QtAds.CDockManager.setConfigFlag(QtAds.CDockManager.XmlCompressionEnabled, False)
+        QtAds.CDockManager.setConfigFlag(QtAds.CDockManager.FocusHighlighting, True)
+       
 
     def handle_instrument_clicked(self, name):
         table = QTableWidget()
@@ -150,17 +153,3 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
         event.accept()
 
-def main():
-    AppConfig.load(profile="gui", config_dirs=["./config"])
-    setup_logger()
-    app = QApplication(sys.argv)
-    main_window = MainWindow()
-    main_window.showMaximized()
-    sys.exit(app.exec())
-
-def get_sequence(name: str):
-    eps = entry_points(group="sequences")
-    matches = {ep.name: ep.load() for ep in eps}
-    if name not in matches:
-        raise ValueError(f"Sequence '{name}' not found. Available: {list(matches)}")
-    return matches[name]

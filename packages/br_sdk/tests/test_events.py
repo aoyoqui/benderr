@@ -4,13 +4,11 @@ import time
 from datetime import datetime
 
 import pytest
-
 from br_sdk.br_types import (
     BooleanSpec,
     Measurement,
     Step,
     StepResult,
-    StringSpec,
     Verdict,
 )
 from br_sdk.config import AppConfig
@@ -95,7 +93,7 @@ def test_event_roundtrip(event_config):
 
 
 def test_shutdown_removes_socket(event_config):
-    server = ensure_event_server()
+    ensure_event_server()
     socket_path = event_config
 
     # wait briefly for server to create socket file

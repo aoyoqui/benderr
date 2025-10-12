@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-br_gui = "views.main_window:main"
+br_gui = "main:main"
 
 [tool.pytest.ini_options]
 pythonpath = [
