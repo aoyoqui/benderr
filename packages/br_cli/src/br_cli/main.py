@@ -5,7 +5,7 @@ from pathlib import Path
 from br_sdk.br_logging import setup_logger
 from br_sdk.br_types import Measurement, Step, StepResult, Verdict
 from br_sdk.config import AppConfig
-from br_sdk.events import step_ended, step_started
+from br_sdk.events import EventSubscriber, shutdown_event_server
 from br_sdk.parse_steps import steps_from_file
 from br_sdk.report_json import JsonReportFormatter
 from rich.console import Console
@@ -14,11 +14,11 @@ from rich.table import Table
 console = Console()
 
 
-def handle_step_started(sender, step: Step):
+def handle_step_started(step: Step):
     console.rule(f"[bold blue]🟡 Step Start: {step.name}")
 
 
-def handle_step_ended(sender, result: StepResult):
+def handle_step_ended(result: StepResult):
     passed = result.verdict == Verdict.PASSED
     color = "green" if passed else "red"
     icon = "✅" if passed else "❌"
@@ -89,12 +89,21 @@ def main():
     setup_logger()
     steps = steps_from_file(args.config)
 
-    step_started.connect(handle_step_started)
-    step_ended.connect(handle_step_ended)
+    subscriber = EventSubscriber(
+        on_step_started=handle_step_started,
+        on_step_ended=handle_step_ended,
+        on_log=lambda msg, level: None,
+        start_server=True,
+    )
+    subscriber.start()
 
     SequenceClass = get_sequence(args.sequence)
     sequence = SequenceClass(steps, JsonReportFormatter())
-    sequence.run()
+    try:
+        sequence.run()
+    finally:
+        subscriber.stop(grace_period=0.2)
+        shutdown_event_server()
 
 
 if __name__ == "__main__":

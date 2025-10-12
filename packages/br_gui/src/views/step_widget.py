@@ -34,8 +34,8 @@ class StepWidget(QWidget):
         return QWidget()
 
     def handle_step_started(self, step: Step):
-        print(f"Step widget received start {step}")
         if self.id == step.id:
+            print(f"Step widget received start {step}")
             self.container.header.background.setStyleSheet("QLabel { background-color: lightblue; }")
 
     def handle_step_ended(self, result: StepResult):

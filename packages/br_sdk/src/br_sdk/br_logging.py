@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 from br_sdk.config import AppConfig
-from br_sdk.events import log_msg
+from br_sdk.events import publish_log
 
 
 def setup_logger():
@@ -49,4 +49,4 @@ def reset_log_file():
 class SignalEmitterHandler(logging.Handler):
     def emit(self, record):
         msg = self.format(record)
-        log_msg.send(self, log=msg, record=record)
+        publish_log(msg, record.levelname)

@@ -22,7 +22,7 @@ from br_sdk.br_types import (
     Verdict,
 )
 from br_sdk.config import AppConfig
-from br_sdk.events import step_ended, step_started
+from br_sdk.events import ensure_event_server, publish_step_ended, publish_step_started
 from br_sdk.report import ReportFormatter
 
 
@@ -39,6 +39,7 @@ class Sequence(ABC):
         self.validate_steps(self.steps)
 
     def run(self):
+        ensure_event_server()
         self.start_time = datetime.now()
         self.step_results = []
         self._config_index = 0
@@ -115,15 +116,6 @@ class Sequence(ABC):
         return result
 
     def _test(self, result, step_result: StepResult, specs) -> StepResult:
-        # How do we turn a list of Specs into a list of Measurement
-        # First, we need to process the result in some way. What form can result have? WHat should we support??
-        # Supported types:
-        # - str - Spec supported StringSpec. len(specs) == 1. Take name from Spec
-        # - dataclass - Convention to check for attribute name in dataclass and compare to that value
-        #               using the other supported datatypes. len(specs) >= number of attributes
-        #               Nested dataclasses not supported
-        # - tuple/list - If tuples of primitive types, use name from Spec, use same order as provided. Use with care
-        #                If tuples of dataclasses,
         if specs is None or len(specs) == 0:
             step_result.verdict = Verdict.PASSED
         elif isinstance(result, bool):
@@ -318,7 +310,7 @@ class Sequence(ABC):
 
     def _run_registered_step(self, func, expected_step_name: str, *args, **kwargs):
         config_step = self._next_config_step(expected_step_name)
-        step_started.send(self, step=config_step)
+        publish_step_started(config_step)
         self.logger.info(f"Start step: {config_step.name}")
         self.logger.info(f"Step config/specs: {config_step}")
         step_result = StepResult(config_step.id, config_step.name, datetime.now())
@@ -334,5 +326,5 @@ class Sequence(ABC):
             self.logger.info(f"Result from step {config_step.name}: {step_result}")
             self.logger.info(f"End step: {config_step.name}")
             self.step_results.append(step_result)
-            step_ended.send(self, result=step_result)
+            publish_step_ended(step_result)
         return result

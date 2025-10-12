@@ -5,6 +5,7 @@ from pathlib import Path
 import PySide6QtAds as QtAds
 from br_sdk.br_logging import setup_logger
 from br_sdk.config import AppConfig
+from br_sdk.events import shutdown_event_server
 from br_sdk.parse_steps import steps_from_file
 from core.event_bridge import EventBridge
 from PySide6.QtCore import QObject, Qt, QThread, Slot
@@ -134,9 +135,20 @@ class MainWindow(QMainWindow):
         self._worker = Worker(self.selected_sequence, self.steps_data)
         self._worker.moveToThread(self._thread)
 
+        self.bridge.wait_until_ready(timeout=1.0)
+
         self._thread.started.connect(self._worker.run)
         self._thread.start()
         self.running = True
+
+    def closeEvent(self, event):
+        if self._thread and self._thread.isRunning():
+            self._thread.quit()
+            self._thread.wait()
+        self.bridge.shutdown()
+        shutdown_event_server()
+        super().closeEvent(event)
+        event.accept()
 
 def main():
     AppConfig.load(profile="gui", config_dirs=["./config"])

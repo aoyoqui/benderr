@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package brsdk.events;
+
+message SubscribeRequest {}
+
+message Step {
+  int32 id = 1;
+  string name = 2;
+}
+
+enum Verdict {
+  VERDICT_UNSPECIFIED = 0;
+  VERDICT_PASSED = 1;
+  VERDICT_FAILED = 2;
+  VERDICT_ABORTED = 3;
+}
+
+message Spec {
+  string type = 1;
+  string name = 2;
+  bool pass_if_true = 3;
+  string comparator = 4;
+  double lower = 5;
+  double upper = 6;
+  string units = 7;
+  string expected = 8;
+  bool case_sensitive = 9;
+  bool has_lower = 10;
+  bool has_upper = 11;
+  bool has_expected = 12;
+}
+
+message Measurement {
+  Spec spec = 1;
+  string value = 2;
+  bool passed = 3;
+}
+
+message StepResult {
+  Step step = 1;
+  Verdict verdict = 2;
+  repeated Measurement measurements = 3;
+  int64 start_time_ms = 4;
+  int64 end_time_ms = 5;
+}
+
+message StepStartedEvent {
+  Step step = 1;
+}
+
+message StepEndedEvent {
+  StepResult result = 1;
+}
+
+message LogEvent {
+  string message = 1;
+  string level = 2;
+}
+
+message Event {
+  oneof payload {
+    StepStartedEvent step_started = 1;
+    StepEndedEvent step_ended = 2;
+    LogEvent log = 3;
+  }
+}
+
+service EventStream {
+  rpc Subscribe(SubscribeRequest) returns (stream Event);
+}

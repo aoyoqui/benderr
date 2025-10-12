@@ -1,5 +1,5 @@
 from br_sdk.br_types import Step, StepResult
-from br_sdk.events import log_msg, step_ended, step_started
+from br_sdk.events import EventSubscriber, ensure_event_server
 from PySide6.QtCore import QObject, Signal
 
 
@@ -10,16 +10,17 @@ class EventBridge(QObject):
 
     def __init__(self):
         super().__init__()
+        server = ensure_event_server()
+        self._subscriber = EventSubscriber(
+            on_step_started=self.qt_step_started.emit,
+            on_step_ended=self.qt_step_ended.emit,
+            on_log=lambda msg, level: self.qt_log_msg.emit(msg),
+            address=server.address,
+        )
+        self._subscriber.start()
 
-        step_started.connect(self.handle_step_started)
-        step_ended.connect(self.handle_step_ended)
-        log_msg.connect(self.handle_log_msg)
-        
-    def handle_step_started(self, sender, step):
-        self.qt_step_started.emit(step)
+    def shutdown(self):
+        self._subscriber.stop()
 
-    def handle_step_ended(self, sender, result):
-        self.qt_step_ended.emit(result)
-
-    def handle_log_msg(self, sender, log, record):
-        self.qt_log_msg.emit(log)
+    def wait_until_ready(self, timeout: float | None = None) -> bool:
+        return self._subscriber.wait_until_ready(timeout)

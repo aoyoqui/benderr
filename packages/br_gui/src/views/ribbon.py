@@ -29,7 +29,6 @@ class RibbonButton(QToolButton):
             QToolButton:hover { background-color: darkgray; }
             """
         )
-        self.clicked.connect(lambda: print(f"I was clicked: {self.text()}"))
 
 class RibbonPage(QWidget):
     button_clicked = Signal(str)

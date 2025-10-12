@@ -29,6 +29,9 @@ demos = { workspace = true }
 line-length = 119
 select = ["E", "F", "I"]
 target-version = "py312"
+exclude = [
+  "_grpc"
+]
 
 [tool.pytest.ini_options]
 pythonpath = [
