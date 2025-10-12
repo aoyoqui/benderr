@@ -6,7 +6,10 @@
 
 ## gRPC proto
 
-Run the following when making changes to a protobuff:
+Make sure to re-generate the RPC interfaces when changing a proto file. Example:
 ```
-uv run python -m grpc_tools.protoc -Ipackages/br_sdk/proto --python_out=packages/br_sdk/src --grpc_python_out=packages/br_sdk/src packages/br_sdk/proto/events.proto
+pushd 
+cd packages/br_sdk/src
+uv run python -m grpc_tools.protoc -Ibr_sdk/_grpc=../proto --python_out=. --grpc_python_out=. ../proto/events.proto
+popd
 ```
