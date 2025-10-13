@@ -1,17 +1,5 @@
-"""
-. for now simply receives a list of sequence names, forget about the manifest for now 
-. for each sequence name, fetch its specs. for now instead of fetching, simply return from a hard-coded dictionary that returns the path file of a json file that contains the sequence config 
-. It tracks the execution status of each test sequence 
-. It receives requests to start executing a sequence
-. It provides some guard rails/checks to allow only the execution of the next sequence (other rules may come later) 
-. Upon request of a new sequence, it creates a new env if needed, where it runs the test
-. The test is run with its run method. This is run in a new worker. When the run method finishes, the worker exits cleanly 
-. The SDK already takes care of tracking start/end/steps events. 
-Assume there is already a gRPC mechanism, and that the agent only needs to subscribe. 
-You can leave the subscription bits as a stub 
-. The next sequence may be started
-"""
 import asyncio, os, time
+from datetime import datetime
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -73,19 +61,36 @@ class Agent:
             env=os.environ.copy(),
         )
         rt.pid = rt.proc.pid
-        rt.started_at = time.time()
+        rt.started_at = datetime.now()
         rt.status = SeqStatus.RUNNING
+        if rt.proc.stdout:
+            rt.out_task = asyncio.create_task(self._forward_stream(rt.proc.stdout, is_err=False))
+        if rt.proc.stderr:
+            rt.err_task = asyncio.create_task(self._forward_stream(rt.proc.stderr, is_err=True))
 
         asyncio.create_task(self._wait_and_finalize(rt))
         return rt.pid
 
     async def _wait_and_finalize(self, rt: SeqRuntime):
         rc = await rt.proc.wait()
-        rt.ended_at = time.time()
+        rt.ended_at = datetime.now()
         rt.status = SeqStatus.COMPLETED if rc == 0 else SeqStatus.FAILED
         # let readers finish
-        if rt.out_task: await rt.out_task
-        if rt.err_task: await rt.err_task
+        if rt.out_task:
+            await rt.out_task
+        if rt.err_task:
+            await rt.err_task
+
+    async def _forward_stream(self, stream: asyncio.StreamReader, is_err: bool):
+        while True:
+            line = await stream.readline()
+            if not line:
+                break
+            text = line.decode().rstrip()
+            if is_err:
+                print(text, file=os.sys.stderr)
+            else:
+                print(text)
         
     def is_busy(self):
         return any(rt.status == SeqStatus.RUNNING for rt in self.runtime)
@@ -97,12 +102,13 @@ class Agent:
 
     def status_table(self) -> list[dict[str, str]]:
         rows = []
+        time_format = "%Y-%m-%d %H:%M:%S.%f"
         for i, name in enumerate(self.sequence_names):
             rt = self.runtime[i]
             rows.append({
                 "sequence": name, "status": rt.status.value, "pid": str(rt.pid or ""),
-                "started_at": f"{int(rt.started_at)}" if rt.started_at else "",
-                "ended_at": f"{int(rt.ended_at)}" if rt.ended_at else "",
+                "started_at": f"{rt.started_at.strftime(time_format)}" if rt.started_at else "",
+                "ended_at": f"{rt.ended_at.strftime(time_format)}" if rt.ended_at else "",
             })
         return rows
 

@@ -5,11 +5,10 @@ package = true
 name = "br_agent"
 version = "0.1.0"
 dependencies = [
-    "br_sdk",
+    "rich>=14.0.0",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = [
   "src"
 ]
-

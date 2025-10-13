@@ -31,11 +31,11 @@ name = "br-agent"
 version = "0.1.0"
 source = { editable = "packages/br_agent" }
 dependencies = [
-    { name = "br-sdk" },
+    { name = "rich" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "br-sdk", editable = "packages/br_sdk" }]
+requires-dist = [{ name = "rich", specifier = ">=14.0.0" }]
 
 [[package]]
 name = "br-cli"
