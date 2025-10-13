@@ -2,7 +2,7 @@
 
 * Install uv
 * Create environment with ```uv sync```
-* Try to execute a demo sequence with ```benderr --sequence demo-sequenc --config "packages/demos/src/br_demos/demo_steps.json"```
+* Execute a demo sequence with ```br_cli --sequence demo-sequence --config "packages/demos/src/br_demos/demo_steps.json"```
 
 ## gRPC proto
 
