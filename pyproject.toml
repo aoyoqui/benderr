@@ -14,6 +14,7 @@ dev = [
 [tool.uv.workspace]
 members = [
   "packages/br_sdk",
+  "packages/br_agent",
   "packages/br_cli",
   "packages/br_gui",
   "packages/demos",
@@ -21,6 +22,7 @@ members = [
 
 [tool.uv.sources]
 br_sdk = { workspace = true }
+br_agent = { workspace = true }
 br_cli = { workspace = true }
 br_gui = { workspace = true }
 demos = { workspace = true }
@@ -36,6 +38,7 @@ exclude = [
 [tool.pytest.ini_options]
 pythonpath = [
   "packages/br_sdk/src",
+  "packages/br_agent/src",
   "packages/br_cli/src",
   "packages/br_gui/src",
   "packages/demos/src"

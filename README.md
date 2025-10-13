@@ -13,3 +13,10 @@ cd packages/br_sdk/src
 uv run python -m grpc_tools.protoc -Ibr_sdk/_grpc=../proto --python_out=. --grpc_python_out=. ../proto/events.proto
 popd
 ```
+
+## Build
+
+You can manually build wheels with the following command:
+```
+uv build --all-packages --wheel -o dist
+```

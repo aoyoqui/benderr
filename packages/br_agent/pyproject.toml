@@ -1,0 +1,15 @@
+[tool.uv]
+package = true
+
+[project]
+name = "br_agent"
+version = "0.1.0"
+dependencies = [
+    "br_sdk",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
