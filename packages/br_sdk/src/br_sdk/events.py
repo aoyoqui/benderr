@@ -14,6 +14,8 @@ from br_sdk._grpc import events_pb2, events_pb2_grpc
 from br_sdk.br_types import (
     BooleanSpec,
     Measurement,
+    NoSpec,
+    NoSpecAction,
     NumericComparator,
     NumericSpec,
     Step,
@@ -274,6 +276,13 @@ def _to_proto_spec(spec) -> events_pb2.Spec:
                 name=spec.name,
                 pass_if_true=spec.pass_if_true,
             )
+        case "none":
+            return events_pb2.Spec(
+                type=spec.type,
+                name=spec.name,
+                expected=spec.action.value,
+                has_expected=True,
+            )
         case "numeric":
             has_lower = spec.lower is not None
             has_upper = spec.upper is not None
@@ -338,6 +347,9 @@ def _from_proto_measurement(measurement: events_pb2.Measurement) -> Measurement:
 
 def _from_proto_spec(spec: events_pb2.Spec):
     match spec.type:
+        case "none":
+            action_value = spec.expected if spec.has_expected else NoSpecAction.LOG.value
+            return NoSpec(name=spec.name, action=NoSpecAction(action_value))
         case "boolean":
             return BooleanSpec(name=spec.name, pass_if_true=spec.pass_if_true)
         case "numeric":

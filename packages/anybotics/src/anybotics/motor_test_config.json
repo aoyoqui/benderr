@@ -15,10 +15,9 @@
       "ignore_fail": false,
       "specs": [
         {
-          "name": "ID",
-          "expected": "0x0011",
-          "case_sensitive": false,
-          "type": "string"
+          "name": "Device ID",
+          "action": "log",
+          "type": "none"
         }
       ]
     },

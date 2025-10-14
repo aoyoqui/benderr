@@ -26,8 +26,6 @@ class MotorTest(Sequence):
 
     @Sequence.step("Absolute position")
     def test_absolute_position(self):
-        # Ask operator to setup rig
-        # Execute commands to move the drive
         pass
 
     @Sequence.step("Torque resolution")

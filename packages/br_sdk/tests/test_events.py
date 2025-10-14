@@ -7,6 +7,8 @@ import pytest
 from br_sdk.br_types import (
     BooleanSpec,
     Measurement,
+    NoSpec,
+    NoSpecAction,
     Step,
     StepResult,
     Verdict,
@@ -68,13 +70,15 @@ def test_event_roundtrip(event_config):
 
     spec = BooleanSpec("flag", True)
     measurement = Measurement(True, True, spec)
+    no_spec = NoSpec("log value", NoSpecAction.LOG)
+    no_spec_measurement = Measurement("logged", True, no_spec)
     result = StepResult(
         step.id,
         step.name,
         start_time=datetime.now(),
         end_time=datetime.now(),
         verdict=Verdict.PASSED,
-        results=[measurement],
+        results=[measurement, no_spec_measurement],
     )
     publish_step_ended(result)
     event_type, payload = received.get(timeout=2.0)
@@ -82,6 +86,9 @@ def test_event_roundtrip(event_config):
     assert payload.id == step.id
     assert payload.verdict == Verdict.PASSED
     assert payload.results[0].spec.name == "flag"
+    assert payload.results[1].spec.name == "log value"
+    assert payload.results[1].spec.action == NoSpecAction.LOG
+    assert payload.results[1].value == "logged"
 
     publish_log("Hello", "INFO")
     event_type, payload = received.get(timeout=2.0)

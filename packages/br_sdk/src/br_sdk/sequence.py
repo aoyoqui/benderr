@@ -10,6 +10,8 @@ from pathlib import Path
 from br_sdk.br_types import (
     BooleanSpec,
     Measurement,
+    NoSpec,
+    NoSpecAction,
     NumericComparator,
     NumericSpec,
     SequenceResult,
@@ -136,16 +138,42 @@ class Sequence(ABC):
     def _test(self, result, step_result: StepResult, specs) -> StepResult:
         if specs is None or len(specs) == 0:
             step_result.verdict = Verdict.PASSED
-        elif isinstance(result, bool):
-            step_result = self._test_boolean(result, specs, step_result)
-        elif isinstance(result, numbers.Number):
-            step_result = self._test_numeric(result, specs, step_result)
-        elif isinstance(result, str):
-            step_result = self._test_string(result, specs, step_result)
-        elif isinstance(result, (list, tuple)):
-            step_result = self._test_iterable(result, specs, step_result)
         else:
-            pass
+            contains_nospec = any(isinstance(spec, NoSpec) for spec in specs)
+            if contains_nospec and not all(isinstance(spec, NoSpec) for spec in specs):
+                raise SpecMismatch("NoSpec entries cannot be mixed with other spec types in the same step")
+            if contains_nospec:
+                step_result = self._test_no_spec(result, specs, step_result)
+            elif isinstance(result, bool):
+                step_result = self._test_boolean(result, specs, step_result)
+            elif isinstance(result, numbers.Number):
+                step_result = self._test_numeric(result, specs, step_result)
+            elif isinstance(result, str):
+                step_result = self._test_string(result, specs, step_result)
+            elif isinstance(result, (list, tuple)):
+                step_result = self._test_iterable(result, specs, step_result)
+            else:
+                pass
+        return step_result
+
+    @staticmethod
+    def _normalize_measurement_value(value):
+        if isinstance(value, (bool, numbers.Number, str)) or value is None:
+            return value
+        return str(value)
+
+    def _test_no_spec(self, result, specs, step_result: StepResult):
+        normalized_value = self._normalize_measurement_value(result)
+        for spec in specs:
+            match spec.action:
+                case NoSpecAction.LOG:
+                    step_result.results.append(Measurement(normalized_value, True, spec))
+                    self.logger.info("NoSpec log for step '%s': %s", step_result.name, normalized_value)
+                case NoSpecAction.IGNORE:
+                    self.logger.debug("NoSpec ignore for step '%s'", step_result.name)
+                case _:
+                    raise ValueError(f"Unsupported NoSpec action: {spec.action}")
+        step_result.verdict = Verdict.PASSED
         return step_result
 
     @staticmethod

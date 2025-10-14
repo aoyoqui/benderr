@@ -5,6 +5,8 @@ import pytest
 from br_sdk.br_logging import setup_logger
 from br_sdk.br_types import (
     BooleanSpec,
+    NoSpec,
+    NoSpecAction,
     NumericComparator,
     NumericSpec,
     SpecMismatch,
@@ -195,6 +197,69 @@ def test_pass_no_specs():
     assert len(sequence.step_results) == step_count
     for r in sequence.step_results:
         assert r.verdict == Verdict.PASSED
+
+
+class _CustomResult:
+    def __str__(self):
+        return "CustomResult(value)"
+
+
+class TestSequenceNoSpecLog(Sequence):
+    __test__ = False
+
+    @Sequence.step("log_step")
+    def test_log(self):
+        return _CustomResult()
+
+
+class TestSequenceNoSpecIgnore(Sequence):
+    __test__ = False
+
+    @Sequence.step("ignore_step")
+    def test_ignore(self):
+        return 42
+
+
+class TestSequenceMixedNoSpec(Sequence):
+    __test__ = False
+
+    @Sequence.step("mixed_step")
+    def test_mixed(self):
+        return True
+
+
+def test_no_spec_log_records_measurement():
+    steps = [Step(1, "log_step", [NoSpec("Log result", NoSpecAction.LOG)])]
+    sequence = TestSequenceNoSpecLog(steps)
+    sequence.run()
+    assert sequence.step_results[0].verdict == Verdict.PASSED
+    assert len(sequence.step_results[0].results) == 1
+    measurement = sequence.step_results[0].results[0]
+    assert measurement.value == "CustomResult(value)"
+    assert measurement.passed
+    assert isinstance(measurement.spec, NoSpec)
+    assert measurement.spec.action == NoSpecAction.LOG
+
+
+def test_no_spec_ignore_has_no_measurements():
+    steps = [Step(1, "ignore_step", [NoSpec("Ignore result", NoSpecAction.IGNORE)])]
+    sequence = TestSequenceNoSpecIgnore(steps)
+    sequence.run()
+    assert sequence.step_results[0].verdict == Verdict.PASSED
+    assert len(sequence.step_results[0].results) == 0
+
+
+def test_no_spec_cannot_mix_with_other_specs():
+    steps = [
+        Step(
+            1,
+            "mixed_step",
+            [NoSpec("log", NoSpecAction.LOG), BooleanSpec("ExpectedTrue", pass_if_true=True)],
+        )
+    ]
+    sequence = TestSequenceMixedNoSpec(steps)
+    with pytest.raises(SpecMismatch):
+        sequence.run()
 
 
 def test_boolean_spec_check():

@@ -69,6 +69,13 @@ def add_to_table(table: Table, m: Measurement):
                 f"[{m_color}]{m.value}[/]",
                 "EQ",
             )
+        case "none":
+            table.add_row(
+                f"{m_icon}",
+                f"[bold {m_color}]{m.spec.name}[/]",
+                f"[{m_color}]{m.value}[/]",
+                f"{m.spec.action}",
+            )
 
 
 def get_sequence(name: str):
