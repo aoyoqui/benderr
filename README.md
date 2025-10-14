@@ -20,3 +20,11 @@ You can manually build wheels with the following command:
 ```
 uv build --all-packages --wheel -o dist
 ```
+
+## Demos
+
+You can try out the following demos:
+1. Execute any sequences in packages/demos/src/ by themselves
+2. Execute them via br_cli. Example: ```br_cli --sequence demo-sequence --config "packages/demos/src/br_demos/demo_steps.json"```
+3. Execute sequences with ```br_gui```
+4. Execute a test plan with the agent. Example: ```python -m br_agent.main --plan test_plan.json```

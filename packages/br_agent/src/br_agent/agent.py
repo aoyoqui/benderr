@@ -1,13 +1,20 @@
-import asyncio, os, time
-from datetime import datetime
+import asyncio
+import os
 from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Optional
-from enum import Enum
+
 from br_agent.env_manager import EnvManager
 
+
 class SeqStatus(str, Enum):
-    PENDING="PENDING"; RUNNING="RUNNING"; COMPLETED="COMPLETED"; FAILED="FAILED"
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
 
 @dataclass
 class SeqRuntime:
@@ -15,45 +22,54 @@ class SeqRuntime:
     cfg_path: Path
     status: SeqStatus = SeqStatus.PENDING
     pid: Optional[int] = None
-    started_at: Optional[float] = None
-    ended_at: Optional[float] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
     proc: Optional[asyncio.subprocess.Process] = field(default=None, repr=False)
     out_task: Optional[asyncio.Task] = field(default=None, repr=False)
     err_task: Optional[asyncio.Task] = field(default=None, repr=False)
 
-class Agent:
-    def __init__(self, sequence_names: list[str], config_map: dict[str, str]):
-        self.sequence_names = sequence_names
-        self.config = {k: Path(v).resolve() for k, v in config_map.items()}
-        self.runtime : list[SeqRuntime] = []
-        self.env_mgr = EnvManager(Path.home()/".agent/envs", Path("dist").resolve())
 
-        for name in self.sequence_names:
-            cfg = self._spec_path(name)
-            self.runtime.append(SeqRuntime(name=name, cfg_path=cfg))
+@dataclass
+class TestSpec:
+    name: str
+    config_path: Path
+
+class Agent:
+    def __init__(
+        self,
+        tests: list[TestSpec],
+        env_manager: EnvManager,
+        required_packages: list[str],
+    ):
+        self.env_mgr = env_manager
+        self.required_packages = required_packages
+        self.runtime: list[SeqRuntime] = []
+
+        for spec in tests:
+            cfg = spec.config_path
+            if not cfg.exists():
+                raise FileNotFoundError(f"Config file not found: {cfg}")
+            self.runtime.append(SeqRuntime(name=spec.name, cfg_path=cfg))
 
     async def start_sequence(self, index: int):
-        allowed = self.runtime[self.next_allowed()].name
-        name = self.runtime[index].name
-        if allowed is None:
+        allowed_idx = self.next_allowed()
+        if allowed_idx is None:
             raise RuntimeError("All sequences completed")
-        if name != allowed:
-            raise RuntimeError(f"Cannot start '{name}'. Next allowed is '{allowed}'")
+        if index != allowed_idx:
+            raise RuntimeError(
+                f"Cannot start '{self.runtime[index].name}'. "
+                f"Next allowed is '{self.runtime[allowed_idx].name}'"
+            )
         if self.is_busy():
             raise RuntimeError("A sequence is already running")
         
         rt = self.runtime[index]
-        # The required wheels name would come from a manifest file
         py = self.env_mgr.ensure_env(
-            sequence_name=name, 
-            required_wheels=[
-                "br_cli-0.1.0-py3-none-any.whl", 
-                "br_demos-0.1.0-py3-none-any.whl", 
-                "br_sdk-0.1.0-py3-none-any.whl"
-            ],
+            sequence_name=rt.name,
+            requirements=self.required_packages,
         )
 
-        cmd = [str(py), "-m", "br_cli.main", "--sequence", name, "--config", str(rt.cfg_path)]
+        cmd = [str(py), "-m", "br_cli.main", "--sequence", rt.name, "--config", str(rt.cfg_path)]
         rt.proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
@@ -96,24 +112,19 @@ class Agent:
         return any(rt.status == SeqStatus.RUNNING for rt in self.runtime)
 
     def next_allowed(self):
-        for i, _ in enumerate(self.sequence_names):
-            if self.runtime[i].status == SeqStatus.PENDING:
+        for i, rt in enumerate(self.runtime):
+            if rt.status == SeqStatus.PENDING:
                 return i
+        return None
 
     def status_table(self) -> list[dict[str, str]]:
         rows = []
         time_format = "%Y-%m-%d %H:%M:%S.%f"
-        for i, name in enumerate(self.sequence_names):
-            rt = self.runtime[i]
+        for rt in self.runtime:
             rows.append({
-                "sequence": name, "status": rt.status.value, "pid": str(rt.pid or ""),
+                "sequence": rt.name, "status": rt.status.value, "pid": str(rt.pid or ""),
                 "started_at": f"{rt.started_at.strftime(time_format)}" if rt.started_at else "",
                 "ended_at": f"{rt.ended_at.strftime(time_format)}" if rt.ended_at else "",
             })
         return rows
-
-    def _spec_path(self, sequence_name):
-        if sequence_name not in self.config:
-            raise KeyError(f"No spec path configured for {sequence_name}")
-        return self.config[sequence_name]
     

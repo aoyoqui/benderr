@@ -1,0 +1,16 @@
+{
+  "packages": {
+    "env_root": "~/.agent/envs",
+    "find_links": "dist",
+    "allow_online": true,
+    "requirements": [
+      "br_cli-0.1.0-py3-none-any.whl",
+      "br_demos-0.1.0-py3-none-any.whl",
+      "br_sdk-0.1.0-py3-none-any.whl"
+    ]
+  },
+  "tests": [
+    {"name": "demo-sequence", "config": "packages/demos/src/br_demos/demo_steps.json"},
+    {"name": "demo-sequence", "config": "packages/demos/src/br_demos/demo_steps.json"}
+  ]
+}
