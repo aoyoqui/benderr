@@ -360,7 +360,6 @@ class Sequence(ABC):
         self.logger.info(f"Start step: {config_step.name}")
         self.logger.info(f"Step config/specs: {config_step}")
         step_result = StepResult(config_step.id, config_step.name, datetime.now())
-        exception_to_raise: Exception | None = None
         result = None
         try:
             result = Sequence._execute(func, self, *args, **kwargs)
@@ -368,29 +367,14 @@ class Sequence(ABC):
         except Exception as exc:
             self.logger.exception("Unexpected error during sequence execution")
             step_result.verdict = Verdict.ABORTED
-            exception_to_raise = exc
+            raise exc
         finally:
             step_result.end_time = datetime.now()
             self.logger.info(f"Result from step {config_step.name}: {step_result}")
             self.logger.info(f"End step: {config_step.name}")
             self.step_results.append(step_result)
             publish_step_ended(step_result)
-        if exception_to_raise:
-            if isinstance(exception_to_raise, SpecMismatch):
-                raise exception_to_raise
-            if config_step.ignore_fail:
-                self.logger.warning(
-                    "Ignoring failure for step '%s' due to ignore_fail=True",
-                    config_step.name,
-                )
-            elif self._stop_at_step_fail:
-                raise exception_to_raise
-            else:
-                self.logger.warning(
-                    "Continuing after failure for step '%s' because stop_at_step_fail is False",
-                    config_step.name,
-                )
-        elif step_result.verdict == Verdict.FAILED:
+        if step_result.verdict == Verdict.FAILED:
             if config_step.ignore_fail:
                 self.logger.warning(
                     "Step '%s' failed but will be ignored due to ignore_fail=True",

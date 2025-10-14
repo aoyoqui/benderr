@@ -593,6 +593,45 @@ def test_ignore_fail_continues_execution_when_stop_enabled():
     assert sequence.after_fail_executed
 
 
+class ExceptionStopsSequence(Sequence):
+    __test__ = False
+
+    def __init__(self, steps, sequence_config=None):
+        super().__init__(steps, sequence_config=sequence_config)
+        self.after_exception_executed = False
+
+    @Sequence.step("pass_step")
+    def test_pass(self):
+        return True
+
+    @Sequence.step("exception_step")
+    def test_exception(self):
+        raise RuntimeError("unexpected error")
+
+    @Sequence.step("after_exception")
+    def test_after_exception(self):
+        self.after_exception_executed = True
+        return True
+
+
+def test_unexpected_exception_stops_sequence_execution():
+    steps = [
+        Step(1, "pass_step", [BooleanSpec("ExpectTrue", pass_if_true=True)]),
+        Step(2, "exception_step", []),
+        Step(3, "after_exception", []),
+    ]
+    sequence = ExceptionStopsSequence(
+        steps,
+        sequence_config={"stop_at_step_fail": False},
+    )
+    with pytest.raises(RuntimeError):
+        sequence.run()
+    assert len(sequence.step_results) == 2
+    assert sequence.step_results[0].verdict == Verdict.PASSED
+    assert sequence.step_results[1].verdict == Verdict.ABORTED
+    assert not sequence.after_exception_executed
+
+
 def delay_10ms():
     time.sleep(0.01)
 
