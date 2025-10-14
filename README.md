@@ -1,3 +1,14 @@
+# Bender R
+
+This is a python-based manufacturing test system. It consists of the following packages:
+* br_sdk - A library for test developers to import and use in their top-level test sequences
+* br_cli - A small utility to execute individual tests with configuration files
+* br_agent - Application that executes on stations that manages the execution of a test plan
+* br_hw - Drivers for all instruments, DUTs, etc. Tests can import and use directly any driver in this package
+* br_gui (wip) - A qt-based GUI to execute individual tests with configuration files
+
+benderr is short for Bender Bending Rodriguez, assembled in Tijuana, Mexico in 2996, with unit number 1729 and serial number 2716057. https://en.wikipedia.org/wiki/Bender_(Futurama)
+
 ## Installation
 
 * Install uv

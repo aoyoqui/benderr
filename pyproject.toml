@@ -17,6 +17,7 @@ members = [
   "packages/br_agent",
   "packages/br_cli",
   "packages/br_gui",
+  "packages/br_hw",
   "packages/demos",
 ]
 
@@ -25,6 +26,7 @@ br_sdk = { workspace = true }
 br_agent = { workspace = true }
 br_cli = { workspace = true }
 br_gui = { workspace = true }
+br_hw = { workspace = true }
 demos = { workspace = true }
 
 [tool.ruff]
@@ -41,6 +43,8 @@ pythonpath = [
   "packages/br_agent/src",
   "packages/br_cli/src",
   "packages/br_gui/src",
-  "packages/demos/src"
+  "packages/br_hw/src",
+  "packages/demos/src",
+  "packages/anybotics/src"
 ]
 

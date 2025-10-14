@@ -8,6 +8,7 @@ members = [
     "br-cli",
     "br-demos",
     "br-gui",
+    "br-hw",
     "br-sdk",
 ]
 
@@ -67,6 +68,11 @@ requires-dist = [
     { name = "pyside6", specifier = ">=6.9.0" },
     { name = "pyside6-qtads", specifier = ">=4.4.0" },
 ]
+
+[[package]]
+name = "br-hw"
+version = "0.1.0"
+source = { editable = "packages/br_hw" }
 
 [[package]]
 name = "br-sdk"
