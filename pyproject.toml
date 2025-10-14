@@ -19,6 +19,7 @@ members = [
   "packages/br_gui",
   "packages/br_hw",
   "packages/demos",
+  "packages/anybotics",
 ]
 
 [tool.uv.sources]
@@ -28,6 +29,7 @@ br_cli = { workspace = true }
 br_gui = { workspace = true }
 br_hw = { workspace = true }
 demos = { workspace = true }
+anybotics = { workspace = true }
 
 [tool.ruff]
 line-length = 119
@@ -44,7 +46,6 @@ pythonpath = [
   "packages/br_cli/src",
   "packages/br_gui/src",
   "packages/br_hw/src",
-  "packages/demos/src",
-  "packages/anybotics/src"
+  "packages/demos/src"
 ]
 

@@ -1,0 +1,14 @@
+[tool.uv]
+package = true
+
+[project]
+name = "anybotics"
+version = "0.1.0"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
+[project.entry-points.'sequences']
+motor-test = "anybotics.motor_test:MotorTest"

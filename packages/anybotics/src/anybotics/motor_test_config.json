@@ -1,0 +1,42 @@
+{
+  "config":
+  {
+    "stop_at_step_fail": false
+  },
+  "steps":
+  [
+    {
+      "id": 1,
+      "name": "Setup"
+    },
+    {
+      "id": 2,
+      "name": "Read Identifier",
+      "ignore_fail": false,
+      "specs": [
+        {
+          "name": "ID",
+          "expected": "0x0011",
+          "case_sensitive": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Read calibration values"
+    },
+    {
+      "id": 4,
+      "name": "Absolute position"
+    },
+    {
+      "id": 5,
+      "name": "Torque resolution"
+    },
+    {
+      "id": 6,
+      "name": "Teardown"
+    }
+  ]
+}

@@ -6,11 +6,13 @@
     "requirements": [
       "br_cli-0.1.0-py3-none-any.whl",
       "br_demos-0.1.0-py3-none-any.whl",
-      "br_sdk-0.1.0-py3-none-any.whl"
+      "br_sdk-0.1.0-py3-none-any.whl",
+      "br_hw-0.1.0-py3-none-any.whl",
+      "anybotics-0.1.0-py3-none-any.whl"
     ]
   },
   "tests": [
     {"name": "demo-sequence", "config": "packages/demos/src/br_demos/demo_steps.json"},
-    {"name": "demo-sequence", "config": "packages/demos/src/br_demos/demo_steps.json"}
+    {"name": "motor-test", "config": "packages/anybotics/src/anybotics/motor_test_config.json"}
   ]
 }
