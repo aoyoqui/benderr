@@ -4,11 +4,14 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from rich.console import Console
-from rich.table import Table
-
 from br_agent.agent import Agent, SeqStatus, TestSpec
 from br_agent.env_manager import EnvManager
+from br_sdk.br_types import Step, StepResult
+from br_sdk.config import AppConfig
+from br_sdk.events import EventSubscriber, shutdown_event_server
+from br_sdk.config import AppConfig
+from rich.console import Console
+from rich.table import Table
 
 
 @dataclass
@@ -95,6 +98,45 @@ async def run_plan(plan_path: Path):
         required_packages=plan.packages.requirements,
     )
 
+    captured_events: list[dict[str, str]] = []
+
+    def record_step_started(step: Step):
+        captured_events.append(
+            {
+                "type": "started",
+                "id": str(step.id),
+                "name": step.name,
+            }
+        )
+
+    def record_step_ended(result: StepResult):
+        captured_events.append(
+            {
+                "type": "ended",
+                "id": str(result.id),
+                "name": result.name,
+                "verdict": result.verdict.value,
+            }
+        )
+
+    def record_log(message: str, level: str):
+        captured_events.append(
+            {
+                "type": "log",
+                "level": level,
+                "message": message,
+            }
+        )
+
+    subscriber = EventSubscriber(
+        on_step_started=record_step_started,
+        on_step_ended=record_step_ended,
+        on_log=record_log,
+        start_server=True,
+    )
+    subscriber.start()
+    subscriber.wait_until_ready(timeout=5.0)
+
     while True:
         next_idx = agent.next_allowed()
         if next_idx is None:
@@ -103,7 +145,12 @@ async def run_plan(plan_path: Path):
         while agent.runtime[next_idx].status == SeqStatus.RUNNING:
             await asyncio.sleep(0.1)
 
-    return agent.status_table()
+    table = agent.status_table()
+
+    subscriber.stop(grace_period=0.2)
+    shutdown_event_server()
+
+    return table, captured_events
 
 
 def render_summary(table: list[dict[str, str]]):
@@ -137,10 +184,27 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main():
+    AppConfig.load(profile="cli", config_dirs=["./config"])
     parser = build_parser()
     args = parser.parse_args()
-    results = asyncio.run(run_plan(args.plan.resolve()))
+    results, events = asyncio.run(run_plan(args.plan.resolve()))
     render_summary(results)
+    if events:
+        console.rule("[bold]Captured Events")
+        events_table = Table(show_header=True, header_style="bold cyan")
+        events_table.add_column("Type")
+        events_table.add_column("ID")
+        events_table.add_column("Name / Message")
+        events_table.add_column("Verdict / Level")
+        for event in events:
+            match event["type"]:
+                case "started":
+                    events_table.add_row("started", event["id"], event["name"], "")
+                case "ended":
+                    events_table.add_row("ended", event["id"], event["name"], event.get("verdict", ""))
+                case "log":
+                    events_table.add_row("log", "", event["message"], event.get("level", ""))
+        console.print(events_table)
 
 
 if __name__ == "__main__":
