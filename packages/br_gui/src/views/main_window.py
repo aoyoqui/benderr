@@ -123,7 +123,7 @@ class MainWindow(QMainWindow):
         self.config_path = config_path
         self.steps_data = steps_from_file(self.config_path)
         self.selected_sequence = sequence_name
-        for step in self.steps_data:
+        for step in self.steps_data.steps:
             step_widget = StepWidget(step, self.bridge)
             self.run_layout.addWidget(step_widget)
         self.run_layout.addStretch()
@@ -152,4 +152,3 @@ class MainWindow(QMainWindow):
         shutdown_event_server()
         super().closeEvent(event)
         event.accept()
-

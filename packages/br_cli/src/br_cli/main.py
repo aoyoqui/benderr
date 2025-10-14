@@ -87,7 +87,7 @@ def main():
 
     AppConfig.load(profile="cli", config_dirs=["./config"])
     setup_logger()
-    steps = steps_from_file(args.config)
+    steps_definition = steps_from_file(args.config)
 
     subscriber = EventSubscriber(
         on_step_started=handle_step_started,
@@ -98,7 +98,11 @@ def main():
     subscriber.start()
 
     SequenceClass = get_sequence(args.sequence)
-    sequence = SequenceClass(steps, JsonReportFormatter())
+    sequence = SequenceClass(
+        steps_definition.steps,
+        JsonReportFormatter(),
+        sequence_config=steps_definition.config,
+    )
     try:
         sequence.run()
     finally:

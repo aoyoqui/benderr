@@ -1,5 +1,6 @@
-from br_hw.motor.command import Command
 from random import randint
+
+from br_hw.motor.command import Command
 
 replies = {
     Command.GET_DEVICE_ID: "0x0010",

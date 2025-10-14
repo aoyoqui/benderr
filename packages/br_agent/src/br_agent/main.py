@@ -4,14 +4,14 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from br_agent.agent import Agent, SeqStatus, TestSpec
-from br_agent.env_manager import EnvManager
 from br_sdk.br_types import Step, StepResult
 from br_sdk.config import AppConfig
 from br_sdk.events import EventSubscriber, shutdown_event_server
-from br_sdk.config import AppConfig
 from rich.console import Console
 from rich.table import Table
+
+from br_agent.agent import Agent, SeqStatus, TestSpec
+from br_agent.env_manager import EnvManager
 
 
 @dataclass

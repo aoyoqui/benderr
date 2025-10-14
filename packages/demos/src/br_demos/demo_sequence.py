@@ -49,8 +49,11 @@ class DemoSequence(Sequence):
 
 if __name__ == "__main__":
     json_path = Path(__file__).parent / "demo_steps.json"
-    steps = steps_from_file(json_path)
+    steps_definition = steps_from_file(json_path)
     AppConfig.load(profile="dev", config_dirs=["./config"])
     setup_logger()
-    sequence = DemoSequence(steps)
+    sequence = DemoSequence(
+        steps_definition.steps,
+        sequence_config=steps_definition.config,
+    )
     sequence.run()

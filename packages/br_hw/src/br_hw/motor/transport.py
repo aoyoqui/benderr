@@ -1,5 +1,6 @@
 from typing import Protocol
 
+
 class Transport(Protocol):
     def connect(self):
         pass

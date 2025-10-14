@@ -1,111 +1,118 @@
-[
+{
+  "config":
   {
-    "id": 1,
-    "name": "Step 1. Boolean Spec",
-    "specs": [
-      {
-        "name": "Pass if True",
-        "pass_if_true": true,
-        "type": "boolean"
-      }    
-    ]
+    "stop_at_step_fail": true
   },
-  {
-    "id": 2,
-    "name": "Step 2. Boolean Spec",
-    "specs": [
-      {
-        "name": "Pass if False",
-        "pass_if_true": false,
-        "type": "boolean"
-      }
-    ]
-  },
-  {
-    "id": 3,
-    "name": "Step 3. No Specs"
-  },
-  {
-    "id": 4,
-    "name": "Step 4. Lower limit",
-    "specs": [
-      {
-        "name": "Pass if value is greater than lower limit",
-        "comparator": "GT",
-        "lower": 0,
-        "units": "V",
-        "type": "numeric"
-      }
-    ]
-  },
-  {
-    "id": 5,
-    "name": "Step 5. Upper limit",
-    "specs": [
-      {
-        "name": "Pass if value is less or equal than upper limit",
-        "comparator": "LE",
-        "upper": 0,
-        "units": "mA",
-        "type": "numeric"
-      }
-    ]
-  },
-  {
-    "id": 6,
-    "name": "Step 6. Equality (use lower limit)",
-    "specs": [
-      {
-        "name": "Pass if value is equal to lower limit",
-        "comparator": "EQ",
-        "lower": 0.0,
-        "units": "dB",
-        "type": "numeric"
-      }
-    ]
-  },
-  {
-    "id": 7,
-    "name": "Step 7. Lower and upper limit",
-    "specs": [
-      {
-        "name": "Pass if value is between upper and lower inclusive",
-        "comparator": "GELE",
-        "lower": 0,
-        "upper": 1,
-        "units": "%",
-        "type": "numeric"
-      }
-    ]
-  },
-  {
-    "id": 8,
-    "name": "Step 8. Mixed results",
-    "specs": [
-      {
-        "name": "Pass if true",
-        "pass_if_true": true,
-        "type": "boolean"
-      },
-      {
-        "name": "Pass if value at least",
-        "comparator": "GE",
-        "lower": 0.5,
-        "units": "ratio",
-        "type": "numeric"
-      }
-    ]
-  },
-  {
-    "id": 9,
-    "name": "Step 9. String equality",
-    "specs": [
-      {
-        "name": "Status",
-        "expected": "Calibrated",
-        "case_sensitive": false,
-        "type": "string"
-      }
-    ]
-  }
-]
+  "steps":
+  [ 
+    {
+      "id": 1,
+      "name": "Step 1. Boolean Spec",
+      "specs": [
+        {
+          "name": "Pass if True",
+          "pass_if_true": true,
+          "type": "boolean"
+        }    
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Step 2. Boolean Spec",
+      "specs": [
+        {
+          "name": "Pass if False",
+          "pass_if_true": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Step 3. No Specs"
+    },
+    {
+      "id": 4,
+      "name": "Step 4. Lower limit",
+      "specs": [
+        {
+          "name": "Pass if value is greater than lower limit",
+          "comparator": "GT",
+          "lower": 0,
+          "units": "V",
+          "type": "numeric"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Step 5. Upper limit",
+      "specs": [
+        {
+          "name": "Pass if value is less or equal than upper limit",
+          "comparator": "LE",
+          "upper": 0,
+          "units": "mA",
+          "type": "numeric"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Step 6. Equality (use lower limit)",
+      "specs": [
+        {
+          "name": "Pass if value is equal to lower limit",
+          "comparator": "EQ",
+          "lower": 0.0,
+          "units": "dB",
+          "type": "numeric"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Step 7. Lower and upper limit",
+      "specs": [
+        {
+          "name": "Pass if value is between upper and lower inclusive",
+          "comparator": "GELE",
+          "lower": 0,
+          "upper": 1,
+          "units": "%",
+          "type": "numeric"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Step 8. Mixed results",
+      "specs": [
+        {
+          "name": "Pass if true",
+          "pass_if_true": true,
+          "type": "boolean"
+        },
+        {
+          "name": "Pass if value at least",
+          "comparator": "GE",
+          "lower": 0.5,
+          "units": "ratio",
+          "type": "numeric"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Step 9. String equality",
+      "specs": [
+        {
+          "name": "Status",
+          "expected": "Calibrated",
+          "case_sensitive": false,
+          "type": "string"
+        }
+      ]
+    }
+  ]
+}

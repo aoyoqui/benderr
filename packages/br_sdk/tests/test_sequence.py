@@ -10,6 +10,7 @@ from br_sdk.br_types import (
     SpecMismatch,
     Step,
     StepCountError,
+    StepFailure,
     StepResult,
     StringSpec,
     Verdict,
@@ -235,7 +236,7 @@ def test_boolean_steps():
         Step(2, "Step False", [BooleanSpec("ExpectedFalse", pass_if_true=False)]),
     ]
     step_count = len(steps)
-    sequence = TestSequenceBooleanSpecs(steps)
+    sequence = TestSequenceBooleanSpecs(steps, sequence_config={"stop_at_step_fail": False})
     sequence.run()
     assert len(sequence.step_results) == step_count
     assert sequence.step_results[0].verdict == Verdict.FAILED
@@ -314,7 +315,7 @@ def test_list_step_fail():
             ],
         )
     ]
-    sequence = TestSequenceListFail(steps)
+    sequence = TestSequenceListFail(steps, sequence_config={"stop_at_step_fail": False})
     sequence.run()
     assert sequence.step_results[0].verdict == Verdict.FAILED
     assert [m.value for m in sequence.step_results[0].results] == [True, -1.0]
@@ -451,7 +452,7 @@ def test_string_step_fail():
             ],
         )
     ]
-    sequence = TestSequenceString(steps)
+    sequence = TestSequenceString(steps, sequence_config={"stop_at_step_fail": False})
     sequence.run()
     assert sequence.step_results[0].verdict == Verdict.FAILED
     assert not sequence.step_results[0].results[0].passed
@@ -470,6 +471,61 @@ def test_string_spec_mismatch():
     sequence = TestSequenceString(steps)
     with pytest.raises(SpecMismatch):
         sequence.run()
+
+
+class StopAtStepFailSequence(Sequence):
+    __test__ = False
+
+    def __init__(self, steps, sequence_config=None):
+        super().__init__(steps, sequence_config=sequence_config)
+        self.after_fail_executed = False
+
+    @Sequence.step("pass_step")
+    def test_pass(self):
+        return True
+
+    @Sequence.step("fail_step")
+    def test_fail(self):
+        return False
+
+    @Sequence.step("after_fail")
+    def test_after_fail(self):
+        self.after_fail_executed = True
+        return True
+
+
+def test_stop_at_step_fail_prevents_additional_steps():
+    steps = [
+        Step(1, "pass_step", [BooleanSpec("ExpectTrue", pass_if_true=True)]),
+        Step(2, "fail_step", [BooleanSpec("ExpectTrue", pass_if_true=True)]),
+        Step(3, "after_fail", []),
+    ]
+    sequence = StopAtStepFailSequence(
+        steps,
+        sequence_config={"stop_at_step_fail": True},
+    )
+    with pytest.raises(StepFailure):
+        sequence.run()
+    assert len(sequence.step_results) == 2
+    assert sequence.step_results[0].verdict == Verdict.PASSED
+    assert sequence.step_results[1].verdict == Verdict.FAILED
+    assert not sequence.after_fail_executed
+
+
+def test_ignore_fail_continues_execution_when_stop_enabled():
+    steps = [
+        Step(1, "pass_step", [BooleanSpec("ExpectTrue", pass_if_true=True)]),
+        Step(2, "fail_step", [BooleanSpec("ExpectTrue", pass_if_true=True)], ignore_fail=True),
+        Step(3, "after_fail", []),
+    ]
+    sequence = StopAtStepFailSequence(
+        steps,
+        sequence_config={"stop_at_step_fail": True},
+    )
+    sequence.run()
+    assert len(sequence.step_results) == 3
+    assert sequence.step_results[1].verdict == Verdict.FAILED
+    assert sequence.after_fail_executed
 
 
 def delay_10ms():
@@ -498,7 +554,10 @@ class TestSequenceStartEndTime(Sequence):
 
 
 def test_sequence_start_end_time():
-    sequence = TestSequenceStartEndTime([Step(1, "delay_10ms"), Step(2, "step_raise_exception")])
+    sequence = TestSequenceStartEndTime(
+        [Step(1, "delay_10ms"), Step(2, "step_raise_exception")],
+        sequence_config={"stop_at_step_fail": True},
+    )
     now = datetime.now()
     with pytest.raises(StartEndTimeCustomError):
         sequence.run()
@@ -507,6 +566,48 @@ def test_sequence_start_end_time():
     assert now <= sequence.step_results[1].start_time
     assert sequence.step_results[0].end_time < sequence.step_results[1].start_time
     assert sequence.step_results[1].start_time < sequence.step_results[1].end_time
+
+
+class _DummyFormatter:
+    ext = ".txt"
+
+    def format(self, data):
+        return "dummy"
+
+
+class ReportOnExceptionSequence(Sequence):
+    __test__ = False
+
+    def __init__(self, steps, sequence_config=None):
+        super().__init__(
+            steps,
+            report_formatter=_DummyFormatter(),
+            sequence_config=sequence_config,
+        )
+        self.report_written = False
+
+    @Sequence.step("failing_step")
+    def test_fail(self):
+        raise RuntimeError("boom")
+
+    def _write_report(self):
+        self.report_written = True
+
+
+def test_report_generated_on_exception():
+    original_report_setting = AppConfig.get("report_enabled", False)
+    AppConfig._config["report_enabled"] = True
+    try:
+        steps = [Step(1, "failing_step", [])]
+        sequence = ReportOnExceptionSequence(
+            steps,
+            sequence_config={"stop_at_step_fail": True},
+        )
+        with pytest.raises(RuntimeError):
+            sequence.run()
+        assert sequence.report_written
+    finally:
+        AppConfig._config["report_enabled"] = original_report_setting
 
 
 def test_numeric_spec_pass():
@@ -653,7 +754,7 @@ def test_numeric_steps():
         Step(4, "range_fail_high", [NumericSpec("Expect fail", NumericComparator.LEGE, -2, 2)]),
     ]
     step_count = len(steps)
-    sequence = TestSequenceNumericSpecs(steps)
+    sequence = TestSequenceNumericSpecs(steps, sequence_config={"stop_at_step_fail": False})
     sequence.run()
     assert len(sequence.step_results) == step_count
     assert sequence.step_results[0].verdict == Verdict.PASSED

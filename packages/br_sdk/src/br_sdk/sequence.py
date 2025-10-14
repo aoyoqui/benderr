@@ -16,6 +16,7 @@ from br_sdk.br_types import (
     SpecMismatch,
     Step,
     StepCountError,
+    StepFailure,
     StepResult,
     StepsConfigError,
     StringSpec,
@@ -29,12 +30,19 @@ from br_sdk.report import ReportFormatter
 class Sequence(ABC):
     _step_order = count()
 
-    def __init__(self, steps: list[Step], report_formatter: ReportFormatter=None):
+    def __init__(
+        self,
+        steps: list[Step],
+        report_formatter: ReportFormatter | None = None,
+        sequence_config: dict | None = None,
+    ):
         self.logger = logging.getLogger("benderr")
         self.report_formatter = report_formatter
         self._log_path = None
         self.steps = list(steps)
         self.step_results = []
+        self.sequence_config = sequence_config or {}
+        self._stop_at_step_fail = self.sequence_config.get("stop_at_step_fail", True)
         self._registered_steps = self._collect_step_methods()
         self.validate_steps(self.steps)
 
@@ -43,14 +51,24 @@ class Sequence(ABC):
         self.start_time = datetime.now()
         self.step_results = []
         self._config_index = 0
+        self._stop_at_step_fail = self.sequence_config.get("stop_at_step_fail", True)
         if AppConfig.get("log_to_file", False):
             self._log_path = self._reset_log_file()
         else:
             self._log_path = None
-        for step in self._registered_steps:
-            step["method"]()
-        if AppConfig.get("report_enabled", False) and self.report_formatter:
-            self._write_report()
+        run_exception: Exception | None = None
+        try:
+            for step in self._registered_steps:
+                try:
+                    step["method"]()
+                except Exception as exc:
+                    run_exception = exc
+                    break
+        finally:
+            if AppConfig.get("report_enabled", False) and self.report_formatter:
+                self._write_report()
+        if run_exception:
+            raise run_exception
 
     @staticmethod
     def step(step_name: str):
@@ -314,17 +332,42 @@ class Sequence(ABC):
         self.logger.info(f"Start step: {config_step.name}")
         self.logger.info(f"Step config/specs: {config_step}")
         step_result = StepResult(config_step.id, config_step.name, datetime.now())
+        exception_to_raise: Exception | None = None
+        result = None
         try:
             result = Sequence._execute(func, self, *args, **kwargs)
             step_result = self._test(result, step_result, config_step.specs)
-        except Exception:
-            self.logger.error("Unexpected error during sequence execution")
+        except Exception as exc:
+            self.logger.exception("Unexpected error during sequence execution")
             step_result.verdict = Verdict.ABORTED
-            raise
+            exception_to_raise = exc
         finally:
             step_result.end_time = datetime.now()
             self.logger.info(f"Result from step {config_step.name}: {step_result}")
             self.logger.info(f"End step: {config_step.name}")
             self.step_results.append(step_result)
             publish_step_ended(step_result)
+        if exception_to_raise:
+            if isinstance(exception_to_raise, SpecMismatch):
+                raise exception_to_raise
+            if config_step.ignore_fail:
+                self.logger.warning(
+                    "Ignoring failure for step '%s' due to ignore_fail=True",
+                    config_step.name,
+                )
+            elif self._stop_at_step_fail:
+                raise exception_to_raise
+            else:
+                self.logger.warning(
+                    "Continuing after failure for step '%s' because stop_at_step_fail is False",
+                    config_step.name,
+                )
+        elif step_result.verdict == Verdict.FAILED:
+            if config_step.ignore_fail:
+                self.logger.warning(
+                    "Step '%s' failed but will be ignored due to ignore_fail=True",
+                    config_step.name,
+                )
+            elif self._stop_at_step_fail:
+                raise StepFailure(step_result)
         return result

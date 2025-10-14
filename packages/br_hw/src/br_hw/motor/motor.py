@@ -1,5 +1,6 @@
-from br_hw.motor.transport import Transport
 from br_hw.motor.command import Command
+from br_hw.motor.transport import Transport
+
 
 class MotorDrive:
     def __init__(self, transport: Transport):
@@ -19,4 +20,3 @@ class MotorDrive:
         # Maybe some parsing would need to be done here
         return reply
 
-    def 

@@ -115,6 +115,7 @@ class Step:
     id: int
     name: str
     specs: list[Spec] = field(default_factory=list)
+    ignore_fail: bool = False
 
 
 @dataclass
@@ -150,3 +151,9 @@ class InvalidSpec(Exception):
 
 class StepsConfigError(Exception):
     pass
+
+
+class StepFailure(Exception):
+    def __init__(self, step_result: StepResult):
+        super().__init__(f"Step '{step_result.name}' failed with verdict {step_result.verdict}")
+        self.step_result = step_result
