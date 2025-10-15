@@ -199,6 +199,34 @@ def test_pass_no_specs():
         assert r.verdict == Verdict.PASSED
 
 
+class TestConfiglessSequence(Sequence):
+    __test__ = False
+
+    def __init__(self):
+        self.test_invocations = 0
+        super().__init__()
+
+    def _test(self, result, step_result, specs):
+        self.test_invocations += 1
+        return super()._test(result, step_result, specs)
+
+    @Sequence.step("Configless Step 1")
+    def test_configless_step_one(self):
+        return True
+
+    @Sequence.step("Configless Step 2")
+    def test_configless_step_two(self):
+        return "ok"
+
+
+def test_configless_sequence_runs_without_definition():
+    sequence = TestConfiglessSequence()
+    sequence.run()
+    assert len(sequence.step_results) == 2
+    assert all(r.verdict == Verdict.SKIPPED for r in sequence.step_results)
+    assert sequence.test_invocations == 0
+
+
 class _CustomResult:
     def __str__(self):
         return "CustomResult(value)"

@@ -32,6 +32,7 @@ class NumericComparator(StrEnum):
 class Verdict(StrEnum):
     UNDEFINED = "undefined"
     PASSED = "passed"
+    SKIPPED = "skipped"
     FAILED = "failed"
     ABORTED = "aborted"
 

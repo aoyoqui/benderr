@@ -1,9 +1,7 @@
 import time
-from pathlib import Path
 
 from br_sdk.br_logging import setup_logger
 from br_sdk.config import AppConfig
-from br_sdk.parse_steps import steps_from_file
 from br_sdk.sequence import Sequence
 
 
@@ -55,12 +53,23 @@ class DemoSequence(Sequence):
 
 
 if __name__ == "__main__":
-    json_path = Path(__file__).parent / "demo_steps.json"
-    steps_definition = steps_from_file(json_path)
-    AppConfig.load(profile="dev", config_dirs=["./config"])
-    setup_logger()
-    sequence = DemoSequence(
-        steps_definition.steps,
-        sequence_config=steps_definition.config,
-    )
-    sequence.run()
+    from pathlib import Path
+
+    from br_sdk.parse_steps import steps_from_file
+
+    path = input("Enter config path or leave blank to run configless. Then press enter:\n")
+    if path:
+        json_path = Path(path)
+        steps_definition = steps_from_file(json_path)
+        AppConfig.load(profile="dev", config_dirs=["./config"])
+        setup_logger()
+        sequence = DemoSequence(
+            steps_definition.steps,
+            sequence_config=steps_definition.config,
+        )
+        sequence.run()
+    else:
+        AppConfig.load(profile="dev", config_dirs=["./config"])
+        setup_logger()
+        sequence = DemoSequence()
+        sequence.run()

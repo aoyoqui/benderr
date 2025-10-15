@@ -34,19 +34,21 @@ class Sequence(ABC):
 
     def __init__(
         self,
-        steps: list[Step],
+        steps: list[Step] | None = None,
         report_formatter: ReportFormatter | None = None,
         sequence_config: dict | None = None,
     ):
         self.logger = logging.getLogger("benderr")
         self.report_formatter = report_formatter
         self._log_path = None
-        self.steps = list(steps)
+        self._configless = steps is None
+        self.steps = list(steps) if steps is not None else []
         self.step_results = []
         self.sequence_config = sequence_config or {}
         self._stop_at_step_fail = self.sequence_config.get("stop_at_step_fail", True)
         self._registered_steps = self._collect_step_methods()
-        self.validate_steps(self.steps)
+        if not self._configless:
+            self.validate_steps(self.steps)
 
     def run(self):
         ensure_event_server()
@@ -69,7 +71,11 @@ class Sequence(ABC):
                     break
         finally:
             self.cleanup()
-            if AppConfig.get("report_enabled", False) and self.report_formatter:
+            if (
+                not self._configless
+                and AppConfig.get("report_enabled", False)
+                and self.report_formatter
+            ):
                 self._write_report()
         if run_exception:
             raise run_exception
@@ -350,6 +356,10 @@ class Sequence(ABC):
         return steps
 
     def _next_config_step(self, expected_name: str) -> Step:
+        if self._configless:
+            step = Step(self._config_index + 1, expected_name)
+            self._config_index += 1
+            return step
         if self._config_index >= len(self.steps):
             raise StepCountError(
                 f"Executable steps count ({self._config_index + 1}) exceed configured steps count({len(self.steps)}!)"
@@ -371,7 +381,10 @@ class Sequence(ABC):
         result = None
         try:
             result = Sequence._execute(func, self, *args, **kwargs)
-            step_result = self._test(result, step_result, config_step.specs)
+            if self._configless:
+                step_result.verdict = Verdict.SKIPPED
+            else:
+                step_result = self._test(result, step_result, config_step.specs)
         except Exception as exc:
             self.logger.exception("Unexpected error during sequence execution")
             step_result.verdict = Verdict.ABORTED
