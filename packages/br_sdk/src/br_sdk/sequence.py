@@ -60,6 +60,7 @@ class Sequence(ABC):
             self._log_path = None
         run_exception: Exception | None = None
         try:
+            self.setup()
             for step in self._registered_steps:
                 try:
                     step["method"]()
@@ -67,10 +68,17 @@ class Sequence(ABC):
                     run_exception = exc
                     break
         finally:
+            self.cleanup()
             if AppConfig.get("report_enabled", False) and self.report_formatter:
                 self._write_report()
         if run_exception:
             raise run_exception
+        
+    def setup(self):
+        pass
+
+    def cleanup(self):
+        pass
 
     @staticmethod
     def step(step_name: str):

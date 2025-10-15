@@ -10,8 +10,7 @@ from br_sdk.sequence import Sequence
 
 
 class MotorTest(Sequence):
-    @Sequence.step("Setup")
-    def test_setup(self):
+    def setup(self):
         connection_handler = TransportMock()
         self._any_drive = MotorDrive(connection_handler)
         if not self._any_drive.connect():
@@ -23,7 +22,8 @@ class MotorTest(Sequence):
 
     @Sequence.step("Read calibration values")
     def test_record_calibration_values(self):
-        return 0.5
+        self.k = 0.5 # We can pass values to later steps using member variables
+        return self.k
 
     @Sequence.step("Absolute position")
     def test_absolute_position(self):
@@ -34,8 +34,7 @@ class MotorTest(Sequence):
         # 3. Return values in angles
         return [pos + random.random()*0.001 for pos in move_to]
 
-    @Sequence.step("Teardown")
-    def test_teardown(self):
+    def cleanup(self):
         self._any_drive.disconnect()
 
 

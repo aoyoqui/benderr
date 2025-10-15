@@ -902,5 +902,62 @@ def test_numeric_spec_mismatch():
         )
 
 
+class TestSequenceWithHooks(Sequence):
+    __test__ = False
+
+    def __init__(self, steps, hook_log, *, raise_in_setup=False, raise_in_step=False):
+        self.hook_log = hook_log
+        self.raise_in_setup = raise_in_setup
+        self.raise_in_step = raise_in_step
+        super().__init__(steps)
+
+    def setup(self):
+        self.hook_log.append("setup")
+        if self.raise_in_setup:
+            raise RuntimeError("setup failed")
+
+    def cleanup(self):
+        self.hook_log.append("cleanup")
+
+    @Sequence.step("Hook Step")
+    def test_hook_step(self):
+        self.hook_log.append("step")
+        if self.raise_in_step:
+            raise RuntimeError("step failed")
+        return "done"
+
+
+def test_sequence_runs_setup_before_steps_and_cleanup_after():
+    steps = [Step(1, "Hook Step", [])]
+    hook_log = []
+    sequence = TestSequenceWithHooks(steps, hook_log)
+
+    sequence.run()
+
+    assert hook_log == ["setup", "step", "cleanup"]
+
+
+def test_sequence_cleanup_runs_on_step_error():
+    steps = [Step(1, "Hook Step", [])]
+    hook_log = []
+    sequence = TestSequenceWithHooks(steps, hook_log, raise_in_step=True)
+
+    with pytest.raises(RuntimeError, match="step failed"):
+        sequence.run()
+
+    assert hook_log == ["setup", "step", "cleanup"]
+
+
+def test_sequence_cleanup_runs_on_setup_error():
+    steps = [Step(1, "Hook Step", [])]
+    hook_log = []
+    sequence = TestSequenceWithHooks(steps, hook_log, raise_in_setup=True)
+
+    with pytest.raises(RuntimeError, match="setup failed"):
+        sequence.run()
+
+    assert hook_log == ["setup", "cleanup"]
+
+
 if __name__ == "__main__":
     pytest.main(args=["-v"])
