@@ -10,6 +10,7 @@ from br_sdk.sequence import Sequence
 class DemoSequence(Sequence):
     @Sequence.step("Step 1. Boolean Spec")
     def test_step_1(self):
+        time.sleep(1)
         return True
 
     @Sequence.step("Step 2. Boolean Spec")
@@ -24,26 +25,32 @@ class DemoSequence(Sequence):
 
     @Sequence.step("Step 4. Lower limit")
     def test_step_4(self):
+        time.sleep(1)
         return 1
 
     @Sequence.step("Step 5. Upper limit")
     def test_step_5(self):
+        time.sleep(1)
         return -1
 
     @Sequence.step("Step 6. Equality (use lower limit)")
     def test_step_6(self):
+        time.sleep(1)
         return 0
 
     @Sequence.step("Step 7. Lower and upper limit")
     def test_step_7(self):
+        time.sleep(1)
         return 0.5
 
     @Sequence.step("Step 8. Mixed results")
     def test_step_8(self):
+        time.sleep(1)
         return [True, 0.75]
 
     @Sequence.step("Step 9. String equality")
     def test_step_9(self):
+        time.sleep(1)
         return "Calibrated"
 
 

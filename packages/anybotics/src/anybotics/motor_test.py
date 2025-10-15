@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 from br_hw.motor.motor import MotorDrive
@@ -22,20 +23,20 @@ class MotorTest(Sequence):
 
     @Sequence.step("Read calibration values")
     def test_record_calibration_values(self):
-        pass
+        return 0.5
 
     @Sequence.step("Absolute position")
     def test_absolute_position(self):
-        pass
-
-    @Sequence.step("Torque resolution")
-    def test_torque_resolution(self):
-        pass
+        # These values should be a step config
+        move_to = [0, 15, 30, 180, 180.01]
+        # 1. Command the motor to move to angles
+        # 2. Read the values from a precision rotary table
+        # 3. Return values in angles
+        return [pos + random.random()*0.001 for pos in move_to]
 
     @Sequence.step("Teardown")
     def test_teardown(self):
-        pass
-
+        self._any_drive.disconnect()
 
 
 if __name__ == "__main__":

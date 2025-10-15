@@ -20,3 +20,5 @@ class MotorDrive:
         # Maybe some parsing would need to be done here
         return reply
 
+    def disconnect(self):
+        pass

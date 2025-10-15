@@ -23,18 +23,64 @@
     },
     {
       "id": 3,
-      "name": "Read calibration values"
+      "name": "Read calibration values",
+      "specs": [
+        {
+          "name": "Spring k",
+          "action": "log",
+          "type": "none"
+        }
+      ]
     },
     {
       "id": 4,
-      "name": "Absolute position"
+      "name": "Absolute position",
+      "specs": [
+        {
+          "name": "Absolute position 001",
+          "comparator": "GELE",
+          "lower": -0.001,
+          "upper": 0.001,
+          "units": "ratio",
+          "type": "numeric"
+        },
+        {
+          "name": "Absolute position 002",
+          "comparator": "GELE",
+          "lower": 14.999,
+          "upper": 15.001,
+          "units": "ratio",
+          "type": "numeric"
+        },
+        {
+          "name": "Absolute position 003",
+          "comparator": "GELE",
+          "lower": 29.999,
+          "upper": 30.001,
+          "units": "ratio",
+          "type": "numeric"
+        },
+        {
+          "name": "Absolute position 004",
+          "comparator": "GELE",
+          "lower": 179.99,
+          "upper": 180.001,
+          "units": "ratio",
+          "type": "numeric"
+        },
+        {
+          "name": "Absolute position 005",
+          "comparator": "GELE",
+          "lower": 180.009,
+          "upper": 180.011,
+          "units": "ratio",
+          "type": "numeric"
+        }
+      ]
+ 
     },
     {
       "id": 5,
-      "name": "Torque resolution"
-    },
-    {
-      "id": 6,
       "name": "Teardown"
     }
   ]
