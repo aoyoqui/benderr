@@ -65,7 +65,7 @@ def test_number_of_steps():
     step_count = len(steps)
     sequence = TestSequenceStepCount(steps)
     sequence.run()
-    assert len(sequence.step_results) == step_count
+    assert len(sequence.step_results()) == step_count
 
 
 def test_fewer_steps_than_configured():
@@ -194,8 +194,8 @@ def test_pass_no_specs():
     step_count = len(steps)
     sequence = TestSequenceNoSpecs(steps)
     sequence.run()
-    assert len(sequence.step_results) == step_count
-    for r in sequence.step_results:
+    assert len(sequence.step_results()) == step_count
+    for r in sequence.step_results():
         assert r.verdict == Verdict.PASSED
 
 
@@ -222,8 +222,8 @@ class TestConfiglessSequence(Sequence):
 def test_configless_sequence_runs_without_definition():
     sequence = TestConfiglessSequence()
     sequence.run()
-    assert len(sequence.step_results) == 2
-    assert all(r.verdict == Verdict.SKIPPED for r in sequence.step_results)
+    assert len(sequence.step_results()) == 2
+    assert all(r.verdict == Verdict.SKIPPED for r in sequence.step_results())
     assert sequence.test_invocations == 0
 
 
@@ -260,9 +260,9 @@ def test_no_spec_log_records_measurement():
     steps = [Step(1, "log_step", [NoSpec("Log result", NoSpecAction.LOG)])]
     sequence = TestSequenceNoSpecLog(steps)
     sequence.run()
-    assert sequence.step_results[0].verdict == Verdict.PASSED
-    assert len(sequence.step_results[0].results) == 1
-    measurement = sequence.step_results[0].results[0]
+    assert sequence.step_results()[0].verdict == Verdict.PASSED
+    assert len(sequence.step_results()[0].results) == 1
+    measurement = sequence.step_results()[0].results[0]
     assert measurement.value == "CustomResult(value)"
     assert measurement.passed
     assert isinstance(measurement.spec, NoSpec)
@@ -273,8 +273,8 @@ def test_no_spec_ignore_has_no_measurements():
     steps = [Step(1, "ignore_step", [NoSpec("Ignore result", NoSpecAction.IGNORE)])]
     sequence = TestSequenceNoSpecIgnore(steps)
     sequence.run()
-    assert sequence.step_results[0].verdict == Verdict.PASSED
-    assert len(sequence.step_results[0].results) == 0
+    assert sequence.step_results()[0].verdict == Verdict.PASSED
+    assert len(sequence.step_results()[0].results) == 0
 
 
 def test_no_spec_cannot_mix_with_other_specs():
@@ -331,23 +331,23 @@ def test_boolean_steps():
     step_count = len(steps)
     sequence = TestSequenceBooleanSpecs(steps, sequence_config={"stop_at_step_fail": False})
     sequence.run()
-    assert len(sequence.step_results) == step_count
-    assert sequence.step_results[0].verdict == Verdict.FAILED
-    assert sequence.step_results[1].verdict == Verdict.PASSED
-    assert sequence.step_results[2].verdict == Verdict.PASSED
-    assert sequence.step_results[3].verdict == Verdict.FAILED
-    assert len(sequence.step_results[0].results) == 1
-    assert len(sequence.step_results[1].results) == 1
-    assert len(sequence.step_results[2].results) == 1
-    assert len(sequence.step_results[3].results) == 1
-    assert not sequence.step_results[0].results[0].value
-    assert sequence.step_results[1].results[0].value
-    assert not sequence.step_results[2].results[0].value
-    assert sequence.step_results[3].results[0].value
-    assert not sequence.step_results[0].results[0].passed
-    assert sequence.step_results[1].results[0].passed
-    assert sequence.step_results[2].results[0].passed
-    assert not sequence.step_results[3].results[0].passed
+    assert len(sequence.step_results()) == step_count
+    assert sequence.step_results()[0].verdict == Verdict.FAILED
+    assert sequence.step_results()[1].verdict == Verdict.PASSED
+    assert sequence.step_results()[2].verdict == Verdict.PASSED
+    assert sequence.step_results()[3].verdict == Verdict.FAILED
+    assert len(sequence.step_results()[0].results) == 1
+    assert len(sequence.step_results()[1].results) == 1
+    assert len(sequence.step_results()[2].results) == 1
+    assert len(sequence.step_results()[3].results) == 1
+    assert not sequence.step_results()[0].results[0].value
+    assert sequence.step_results()[1].results[0].value
+    assert not sequence.step_results()[2].results[0].value
+    assert sequence.step_results()[3].results[0].value
+    assert not sequence.step_results()[0].results[0].passed
+    assert sequence.step_results()[1].results[0].passed
+    assert sequence.step_results()[2].results[0].passed
+    assert not sequence.step_results()[3].results[0].passed
 
 
 def test_boolean_spec_mismatch():
@@ -384,9 +384,9 @@ def test_list_step_pass():
     ]
     sequence = TestSequenceListPass(steps)
     sequence.run()
-    assert sequence.step_results[0].verdict == Verdict.PASSED
-    assert [m.value for m in sequence.step_results[0].results] == [True, 1.5, "Done"]
-    assert all(m.passed for m in sequence.step_results[0].results)
+    assert sequence.step_results()[0].verdict == Verdict.PASSED
+    assert [m.value for m in sequence.step_results()[0].results] == [True, 1.5, "Done"]
+    assert all(m.passed for m in sequence.step_results()[0].results)
 
 
 class TestSequenceListFail(Sequence):
@@ -410,10 +410,10 @@ def test_list_step_fail():
     ]
     sequence = TestSequenceListFail(steps, sequence_config={"stop_at_step_fail": False})
     sequence.run()
-    assert sequence.step_results[0].verdict == Verdict.FAILED
-    assert [m.value for m in sequence.step_results[0].results] == [True, -1.0]
-    assert sequence.step_results[0].results[0].passed
-    assert not sequence.step_results[0].results[1].passed
+    assert sequence.step_results()[0].verdict == Verdict.FAILED
+    assert [m.value for m in sequence.step_results()[0].results] == [True, -1.0]
+    assert sequence.step_results()[0].results[0].passed
+    assert not sequence.step_results()[0].results[1].passed
 
 
 class TestSequenceListMismatch(Sequence):
@@ -514,9 +514,9 @@ def test_string_step_pass():
     ]
     sequence = TestSequenceString(steps)
     sequence.run()
-    assert sequence.step_results[0].verdict == Verdict.PASSED
-    assert sequence.step_results[0].results[0].passed
-    assert sequence.step_results[0].results[0].value == "Hello"
+    assert sequence.step_results()[0].verdict == Verdict.PASSED
+    assert sequence.step_results()[0].results[0].passed
+    assert sequence.step_results()[0].results[0].value == "Hello"
 
 
 def test_string_step_case_insensitive_pass():
@@ -531,8 +531,8 @@ def test_string_step_case_insensitive_pass():
     ]
     sequence = TestSequenceString(steps)
     sequence.run()
-    assert sequence.step_results[0].verdict == Verdict.PASSED
-    assert sequence.step_results[0].results[0].passed
+    assert sequence.step_results()[0].verdict == Verdict.PASSED
+    assert sequence.step_results()[0].results[0].passed
 
 
 def test_string_step_fail():
@@ -547,8 +547,8 @@ def test_string_step_fail():
     ]
     sequence = TestSequenceString(steps, sequence_config={"stop_at_step_fail": False})
     sequence.run()
-    assert sequence.step_results[0].verdict == Verdict.FAILED
-    assert not sequence.step_results[0].results[0].passed
+    assert sequence.step_results()[0].verdict == Verdict.FAILED
+    assert not sequence.step_results()[0].results[0].passed
 
 
 def test_string_spec_mismatch():
@@ -599,9 +599,9 @@ def test_stop_at_step_fail_prevents_additional_steps():
     )
     with pytest.raises(StepFailure):
         sequence.run()
-    assert len(sequence.step_results) == 2
-    assert sequence.step_results[0].verdict == Verdict.PASSED
-    assert sequence.step_results[1].verdict == Verdict.FAILED
+    assert len(sequence.step_results()) == 2
+    assert sequence.step_results()[0].verdict == Verdict.PASSED
+    assert sequence.step_results()[1].verdict == Verdict.FAILED
     assert not sequence.after_fail_executed
 
 
@@ -616,8 +616,8 @@ def test_ignore_fail_continues_execution_when_stop_enabled():
         sequence_config={"stop_at_step_fail": True},
     )
     sequence.run()
-    assert len(sequence.step_results) == 3
-    assert sequence.step_results[1].verdict == Verdict.FAILED
+    assert len(sequence.step_results()) == 3
+    assert sequence.step_results()[1].verdict == Verdict.FAILED
     assert sequence.after_fail_executed
 
 
@@ -654,9 +654,9 @@ def test_unexpected_exception_stops_sequence_execution():
     )
     with pytest.raises(RuntimeError):
         sequence.run()
-    assert len(sequence.step_results) == 2
-    assert sequence.step_results[0].verdict == Verdict.PASSED
-    assert sequence.step_results[1].verdict == Verdict.ABORTED
+    assert len(sequence.step_results()) == 2
+    assert sequence.step_results()[0].verdict == Verdict.PASSED
+    assert sequence.step_results()[1].verdict == Verdict.ABORTED
     assert not sequence.after_exception_executed
 
 
@@ -693,11 +693,11 @@ def test_sequence_start_end_time():
     now = datetime.now()
     with pytest.raises(StartEndTimeCustomError):
         sequence.run()
-    assert now <= sequence.step_results[0].start_time
-    assert sequence.step_results[0].start_time < sequence.step_results[0].end_time
-    assert now <= sequence.step_results[1].start_time
-    assert sequence.step_results[0].end_time < sequence.step_results[1].start_time
-    assert sequence.step_results[1].start_time < sequence.step_results[1].end_time
+    assert now <= sequence.step_results()[0].start_time
+    assert sequence.step_results()[0].start_time < sequence.step_results()[0].end_time
+    assert now <= sequence.step_results()[1].start_time
+    assert sequence.step_results()[0].end_time < sequence.step_results()[1].start_time
+    assert sequence.step_results()[1].start_time < sequence.step_results()[1].end_time
 
 
 class _DummyFormatter:
@@ -888,23 +888,23 @@ def test_numeric_steps():
     step_count = len(steps)
     sequence = TestSequenceNumericSpecs(steps, sequence_config={"stop_at_step_fail": False})
     sequence.run()
-    assert len(sequence.step_results) == step_count
-    assert sequence.step_results[0].verdict == Verdict.PASSED
-    assert sequence.step_results[1].verdict == Verdict.PASSED
-    assert sequence.step_results[2].verdict == Verdict.FAILED
-    assert sequence.step_results[3].verdict == Verdict.FAILED
-    assert len(sequence.step_results[0].results) == 1
-    assert len(sequence.step_results[1].results) == 1
-    assert len(sequence.step_results[2].results) == 1
-    assert len(sequence.step_results[3].results) == 1
-    assert sequence.step_results[0].results[0].value == 1.0
-    assert sequence.step_results[1].results[0].value == 255
-    assert sequence.step_results[2].results[0].value == -2
-    assert sequence.step_results[3].results[0].value == 0
-    assert sequence.step_results[0].results[0].passed
-    assert sequence.step_results[1].results[0].passed
-    assert not sequence.step_results[2].results[0].passed
-    assert not sequence.step_results[3].results[0].passed
+    assert len(sequence.step_results()) == step_count
+    assert sequence.step_results()[0].verdict == Verdict.PASSED
+    assert sequence.step_results()[1].verdict == Verdict.PASSED
+    assert sequence.step_results()[2].verdict == Verdict.FAILED
+    assert sequence.step_results()[3].verdict == Verdict.FAILED
+    assert len(sequence.step_results()[0].results) == 1
+    assert len(sequence.step_results()[1].results) == 1
+    assert len(sequence.step_results()[2].results) == 1
+    assert len(sequence.step_results()[3].results) == 1
+    assert sequence.step_results()[0].results[0].value == 1.0
+    assert sequence.step_results()[1].results[0].value == 255
+    assert sequence.step_results()[2].results[0].value == -2
+    assert sequence.step_results()[3].results[0].value == 0
+    assert sequence.step_results()[0].results[0].passed
+    assert sequence.step_results()[1].results[0].passed
+    assert not sequence.step_results()[2].results[0].passed
+    assert not sequence.step_results()[3].results[0].passed
 
 
 class TestSequenceNumericSpecMismatch(Sequence):

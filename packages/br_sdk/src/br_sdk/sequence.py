@@ -39,27 +39,20 @@ class Sequence(ABC):
         sequence_config: dict | None = None,
     ):
         self.logger = logging.getLogger("benderr")
-        self.report_formatter = report_formatter
+        self._report_formatter = report_formatter
         self._log_path = None
         self._configless = steps is None
-        self.steps = list(steps) if steps is not None else []
-        self.step_results = []
-        self.sequence_config = sequence_config or {}
-        self._stop_at_step_fail = self.sequence_config.get("stop_at_step_fail", True)
+        self._steps = list(steps) if steps is not None else []
+        self._step_results = []
+        self._sequence_config = sequence_config or {}
+        self._stop_at_step_fail = self._sequence_config.get("stop_at_step_fail", True)
         self._registered_steps = self._collect_step_methods()
         if not self._configless:
-            self.validate_steps(self.steps)
+            self._validate_steps(self._steps)
 
     def run(self):
         ensure_event_server()
-        self.start_time = datetime.now()
-        self.step_results = []
-        self._config_index = 0
-        self._stop_at_step_fail = self.sequence_config.get("stop_at_step_fail", True)
-        if AppConfig.get("log_to_file", False):
-            self._log_path = self._reset_log_file()
-        else:
-            self._log_path = None
+        self._init_run()
         run_exception: Exception | None = None
         try:
             self.setup()
@@ -71,11 +64,7 @@ class Sequence(ABC):
                     break
         finally:
             self.cleanup()
-            if (
-                not self._configless
-                and AppConfig.get("report_enabled", False)
-                and self.report_formatter
-            ):
+            if self._should_write_report():
                 self._write_report()
         if run_exception:
             raise run_exception
@@ -92,10 +81,7 @@ class Sequence(ABC):
             raise ValueError("Step name must be a non-empty string")
 
         def decorator(fn):
-            if not callable(fn):
-                raise TypeError("@Sequence.step can only decorate callables")
-            if not fn.__name__.startswith("test_"):
-                raise ValueError("@Sequence.step methods must be named with a 'test_' prefix")
+            Sequence._assert_step_definition(fn)
             order = next(Sequence._step_order)
 
             @wraps(fn)
@@ -106,6 +92,24 @@ class Sequence(ABC):
             return wrapper
 
         return decorator
+
+    def step_results(self):
+        return self._step_results    
+
+    @staticmethod
+    def _assert_step_definition(fn):
+        if not callable(fn):
+            raise TypeError("@Sequence.step can only decorate callables")
+        if not fn.__name__.startswith("test_"):
+            raise ValueError("@Sequence.step methods must be named with a 'test_' prefix")
+
+    def _should_write_report(self):
+        return not self._configless and AppConfig.get("report_enabled", False) and self._report_formatter
+
+    def _init_run(self):
+        self.start_time = datetime.now()
+        self._config_index = 0
+        self._log_path = self._reset_log_file() if AppConfig.get("log_to_file", False) else None
 
     def _reset_log_file(self):
         logger = logging.getLogger("benderr")
@@ -128,18 +132,18 @@ class Sequence(ABC):
 
     def _write_report(self):
         verdict = Verdict.PASSED
-        for step in self.step_results:
+        for step in self._step_results:
             if step.verdict != Verdict.PASSED:
                 verdict = step.verdict
                 break
         log_file = str(self._log_path) if self._log_path else ""
         now = datetime.now()
         timestamp = now.strftime("%Y%m%d_%H%M%S")
-        filename = timestamp + "_report" + self.report_formatter.ext
+        filename = timestamp + "_report" + self._report_formatter.ext
         report_path = Path(AppConfig.get("output_dir")) / filename
-        report = SequenceResult(self.start_time, now, log_file, verdict, self.step_results)
+        report = SequenceResult(self.start_time, now, log_file, verdict, self._step_results)
         with open(report_path, "w") as f:
-            f.write(self.report_formatter.format(report))
+            f.write(self._report_formatter.format(report))
 
 
     def _execute(f, *args, **kwargs):
@@ -316,7 +320,7 @@ class Sequence(ABC):
         step_result.verdict = verdict
         return step_result
 
-    def validate_steps(self, config_steps: list[Step]):
+    def _validate_steps(self, config_steps: list[Step]):
         registered = self._registered_steps
         if len(registered) != len(config_steps):
             raise StepCountError(
@@ -360,11 +364,12 @@ class Sequence(ABC):
             step = Step(self._config_index + 1, expected_name)
             self._config_index += 1
             return step
-        if self._config_index >= len(self.steps):
+        if self._config_index >= len(self._steps):
             raise StepCountError(
-                f"Executable steps count ({self._config_index + 1}) exceed configured steps count({len(self.steps)}!)"
+                f"Executable steps count ({self._config_index + 1}) exceed configured steps count({len(self._steps)}!)"
             )
-        config_step = self.steps[self._config_index]
+        config_step = self._steps[self._config_index]
+        self.logger.info(f"Step config/specs: {config_step}")
         self._config_index += 1
         if config_step.name != expected_name:
             raise StepsConfigError(
@@ -373,28 +378,42 @@ class Sequence(ABC):
         return config_step
 
     def _run_registered_step(self, func, expected_step_name: str, *args, **kwargs):
-        config_step = self._next_config_step(expected_step_name)
-        publish_step_started(config_step)
-        self.logger.info(f"Start step: {config_step.name}")
-        self.logger.info(f"Step config/specs: {config_step}")
-        step_result = StepResult(config_step.id, config_step.name, datetime.now())
+        config_step, step_result = self._init_run_configured_step(expected_step_name)
         result = None
         try:
             result = Sequence._execute(func, self, *args, **kwargs)
-            if self._configless:
-                step_result.verdict = Verdict.SKIPPED
-            else:
-                step_result = self._test(result, step_result, config_step.specs)
+            step_result = self._evaluate_result(result, step_result, config_step)
         except Exception as exc:
             self.logger.exception("Unexpected error during sequence execution")
             step_result.verdict = Verdict.ABORTED
             raise exc
         finally:
-            step_result.end_time = datetime.now()
-            self.logger.info(f"Result from step {config_step.name}: {step_result}")
-            self.logger.info(f"End step: {config_step.name}")
-            self.step_results.append(step_result)
-            publish_step_ended(step_result)
+            step_result = self._finalize_run_configured_step(step_result, config_step)
+        self._check_skip_fail(step_result, config_step)
+        return result
+
+    def _init_run_configured_step(self, expected_step_name) -> tuple[Step, StepResult]:
+        config_step = self._next_config_step(expected_step_name)
+        publish_step_started(config_step)
+        self.logger.info(f"Start step: {config_step.name}")
+        return config_step, StepResult(config_step.id, config_step.name, datetime.now())
+
+    def _evaluate_result(self, result, step_result: StepResult, config_step: Step):
+        if self._configless:
+            step_result.verdict = Verdict.SKIPPED
+        else:
+            step_result = self._test(result, step_result, config_step.specs)
+        return step_result
+
+    def _finalize_run_configured_step(self, step_result: StepResult, config_step: Step):
+        step_result.end_time = datetime.now()
+        self.logger.info(f"Result from step {config_step.name}: {step_result}")
+        self.logger.info(f"End step: {config_step.name}")
+        self._step_results.append(step_result)
+        publish_step_ended(step_result)
+        return step_result
+
+    def _check_skip_fail(self, step_result: StepResult, config_step: Step):
         if step_result.verdict == Verdict.FAILED:
             if config_step.ignore_fail:
                 self.logger.warning(
@@ -403,4 +422,3 @@ class Sequence(ABC):
                 )
             elif self._stop_at_step_fail:
                 raise StepFailure(step_result)
-        return result
